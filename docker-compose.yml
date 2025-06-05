@@ -1,7 +1,8 @@
 services:
   chrelyonly-emoji-node-app:
-    build:
-      dockerfile: node:20-alpine
+#    build:
+#      dockerfile: node:20-alpine
+    image: node:20-alpine
     container_name: chrelyonly-emoji-node-app
     volumes:
       - /etc/localtime:/etc/localtime:ro
