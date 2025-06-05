@@ -3,15 +3,21 @@
   "version": "1.0.0",
   "description": "",
   "main": "server.js",
+  "bin": "server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "pkgwin": "pkg . -t node18-win-x64",
+    "pkglinux": "pkg . -t node20-linux-x64",
+    "pkgmacos": "pkg . -t node20-macos-x64",
+    "pkgmacos2": "npx pkg-fetch node20-win-x64"
   },
   "private": true,
   "dependencies": {
     "express": "^5.1.0",
     "gif-encoder-2": "^1.0.5",
+    "gifsicle": "^7.0.1",
     "gifuct-js": "^2.1.2",
     "multer": "^2.0.1",
-    "sharp": "^0.34.2"
+    "sharp": "^0.34.2",
+    "tmp": "^0.2.3"
   }
 }
