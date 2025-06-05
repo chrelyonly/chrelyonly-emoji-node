@@ -1,0 +1,17 @@
+{
+  "name": "chrelyonly-emoji-node",
+  "version": "1.0.0",
+  "description": "",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "private": true,
+  "dependencies": {
+    "express": "^5.1.0",
+    "gif-encoder-2": "^1.0.5",
+    "gifuct-js": "^2.1.2",
+    "multer": "^2.0.1",
+    "sharp": "^0.34.2"
+  }
+}
