@@ -107,7 +107,7 @@ async function overlayAvatarOnGif(gifBuffer, avatarBuffer,delay) {
 }
 
 // 静态资源配置
-app.use('/', express.static(path.join(__dirname, 'public')));
+app.use('/emoji-app', express.static(path.join(__dirname, 'public')));
 app.use(express.json({ limit: '10mb' }));
 
 app.post('/emoji-app/emoji/uploadEmoji', async (req, res) => {
