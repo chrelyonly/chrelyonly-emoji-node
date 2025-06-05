@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>头像生成表情包</title>
+    <link rel="stylesheet" href="https://unpkg.com/element-plus/dist/index.css"/>
+    <style>
+        body {
+            background: #f7f9fa;
+            font-family: "Helvetica Neue", sans-serif;
+        }
+        #app {
+            max-width: 1000px;
+            margin: 60px auto;
+            background: white;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+        .preview img {
+            max-width: 100%;
+            max-height: 300px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            margin-top: 20px;
+        }
+        .result img {
+            margin-top: 30px;
+            border: 2px solid #4CAF50;
+        }
+        .input-group {
+            margin: 20px 0;
+            display: flex;
+            justify-content: space-between;
+            gap: 20px;
+        }
+        .input-group > div {
+            flex: 1;
+        }
+    </style>
+</head>
+<body>
+<div id="app">
+    <el-card>
+        <template #header>
+            <h2 style="text-align: center;">简易抓 GIF 坐标的功能</h2>
+            {{avatarPositions}}
+        </template>
+        <!-- 新增按钮和图片展示 -->
+        <div style="margin-top: 40px;">
+            <el-divider content-position="center">GIF工具</el-divider>
+
+            <div style="text-align: center; margin-bottom: 20px;">
+                <el-space direction="horizontal" alignment="center">
+                    <el-select
+                            v-model="selectedSource"
+                            placeholder="请选择素材来源"
+                            style="width: 200px"
+                    >
+                        <el-option label="左右猫猫图素材" value="gif2" />
+                        <!-- 可根据需要扩展 -->
+                    </el-select>
+
+                    <el-button type="success" :loading="loadingBtn" @click="fetchHistory">
+                        加载素材
+                    </el-button>
+                </el-space>
+            </div>
+
+            <div style="text-align: center;margin-top: 20px">
+                <el-button type="success" :loading="loadingBtn" @click="copyAvatarPositions">
+                    保存生成的坐标数组
+                </el-button>
+            </div>
+
+            <div v-if="framesList.length" style="margin-top: 20px;">
+                <el-row :gutter="20">
+                    <el-col :span="12" v-for="(img, idx) in framesList" :key="idx">
+                        <el-card :body-style="{ padding: '10px' }">
+                            <div style="position:relative;">
+                                <img :src="img.data"  />
+                                <div style="background-color:#78D2CC;width: 145px;height: 145px;border-radius: 50%;position:absolute;"
+                                 :style="{
+                                   left: avatarPositions[idx][0] + 'px',
+                                   top: avatarPositions[idx][1] + 'px'
+                                 }"
+                                ></div>
+                                <!-- 按钮组 -->
+                                <div style="margin-top: 10px; text-align: center;">
+                                        <el-button size="small"  @click="moveLeft(idx)">左</el-button>
+                                        <el-button size="small"  @click="moveUp(idx)" >上</el-button>
+                                        <el-button size="small"  @click="moveDown(idx)">下</el-button>
+                                        <el-button size="small"  @click="moveRight(idx)">右</el-button>
+                                    <div>
+                                        <el-tag>X: {{avatarPositions[idx][0]}}</el-tag>
+                                        <el-tag>y: {{avatarPositions[idx][1]}}</el-tag>
+                                    </div>
+                                </div>
+                            </div>
+                        </el-card>
+                    </el-col>
+                </el-row>
+            </div>
+        </div>
+
+    </el-card>
+</div>
+
+<script src="https://unpkg.com/vue@3"></script>
+<script src="https://unpkg.com/element-plus"></script>
+<script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+<script src="https://unpkg.com/@element-plus/icons-vue"></script>
+
+<script>
+    const { createApp, ref } = Vue;
+
+    const app = createApp({
+        setup() {
+            const moveLeft = (idx) => {
+                avatarPositions.value[idx][0] -= 1;
+            };
+            const moveRight = (idx) => {
+                avatarPositions.value[idx][0] += 1;
+            };
+            const moveUp = (idx) => {
+                avatarPositions.value[idx][1] -= 1;
+            };
+            const moveDown = (idx) => {
+                avatarPositions.value[idx][1] += 1;
+            };
+            const framesList = ref([]);
+            const avatarPositions = ref([]);
+            const loadingBtn = ref(false);
+            const selectedSource = "gif2";
+
+            const fetchHistory = () => {
+                loadingBtn.value = true;
+                axios.post('/api/images',{selectedSource: selectedSource})
+                    .then(res => {
+                        if (res.data.success) {
+                            framesList.value = res.data.images;
+                            avatarPositions.value = res.data.avatarPositions;
+                        } else {
+                            ElementPlus.ElMessage.warning('未获取到图片');
+                        }
+                    })
+                    .catch(() => {
+                        ElementPlus.ElMessage.error('请求失败');
+                    })
+                    .finally(() => {
+                        loadingBtn.value = false;
+                    });
+            };
+
+            const copyAvatarPositions = () => {
+                const text = JSON.stringify(avatarPositions.value);
+                navigator.clipboard.writeText(text)
+                    .then(() => {
+                        ElementPlus.ElMessage.success('位置数组已复制到剪贴板');
+                    })
+                    .catch(() => {
+                        ElementPlus.ElMessage.error('复制失败，请手动复制');
+                    });
+            };
+
+            return {
+                moveLeft,
+                moveRight,
+                moveUp,
+                moveDown,
+                framesList,
+                avatarPositions,
+                loadingBtn,
+                fetchHistory,
+                copyAvatarPositions,
+                selectedSource,
+
+            };
+        }
+    });
+
+    for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
+        app.component(key, component);
+    }
+
+    app.use(ElementPlus).mount('#app');
+</script>
+</body>
+</html>

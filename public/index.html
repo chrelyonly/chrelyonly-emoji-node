@@ -68,10 +68,10 @@
         <!-- 新增输入项 -->
         <div class="input-group" v-if="previewUrl">
             <div>
-                <el-form-item label="GIF 帧延迟 (ms)">
+                <el-form-item label="GIF 帧延迟 (ms)(浏览器有最小帧限制,建议最小填20)">
                     <el-input-number
                             v-model="delay"
-                            :min="10"
+                            :min="1"
                             :max="1000"
                             :step="10"
                             controls-position="right"
@@ -81,7 +81,7 @@
                 </el-form-item>
             </div>
             <div>
-                <el-form-item label="输出宽度 (px)">
+                <el-form-item label="输出宽度 (px)(无效)">
                     <el-input-number
                             v-model="width"
                             :min="50"
@@ -94,7 +94,18 @@
                 </el-form-item>
             </div>
         </div>
-
+        <div style="text-align: center; margin-bottom: 20px;">
+            <el-space direction="horizontal" alignment="center">
+                <el-select
+                        v-model="selectedSource"
+                        placeholder="请选择素材来源"
+                        style="width: 200px"
+                >
+                    <el-option label="左右猫猫图素材" value="2.gif" />
+                    <!-- 可根据需要扩展 -->
+                </el-select>
+            </el-space>
+        </div>
         <div style="text-align: center; margin-top: 20px;">
             <el-button
                     type="primary"
@@ -131,6 +142,7 @@
             // 新增两个响应式数据：delay和width
             const delay = ref(100);
             const width = ref(200);
+            const selectedSource = ref("2.gif");
 
             const handleChange = (uploadFile) => {
                 const file = uploadFile.raw;
@@ -146,8 +158,9 @@
                 uploading.value = true;
                 axios.post('/emoji-app/emoji/uploadEmoji', {
                     base64: base64Image.value,
-                    delay: delay.value,  // 传递delay参数
-                    width: width.value   // 传递width参数
+                    delay: delay.value,
+                    width: width.value,
+                    selectedSource: selectedSource.value
                 }).then(res => {
                     gifUrl.value = res.data.data;
                 }).catch(() => {
@@ -165,7 +178,8 @@
                 handleChange,
                 upload,
                 delay,
-                width
+                width,
+                selectedSource
             };
         }
     });

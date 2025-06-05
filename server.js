@@ -4,28 +4,12 @@ const fs = require('fs/promises');
 const { parseGIF, decompressFrames } = require('gifuct-js');
 const sharp = require('sharp');
 const GIFEncoder = require('gif-encoder-2');
-const { PassThrough } = require('stream');
-
 const app = express();
 
 const PORT = 3000;
-const GIF_PATH = path.join(__dirname, 'public', 'static', '2.gif');
-const OUTPUT_PATH = path.join(__dirname, 'public', 'static', 'output.gif');
 const AVATAR_SIZE = 155;
 const AVATAR_RADIUS = AVATAR_SIZE / 2;
 
-// 头像叠加位置数组，建议改成配置
-const avatarPositions = [
-    [225, 20], [227, 20], [227, 18], [227, 18], [218, 18], [210, 18], [198, 20],
-    [185, 25], [179, 23], [170, 21], [160, 25], [152, 25], [145, 24], [138, 28],
-    [122, 18], [117, 22], [108, 25], [100, 22], [91, 25], [89, 22], [80, 22],
-    [78, 15], [66, 15], [65, 18], [50, 18], [46, 20], [52, 20], [39, 20],
-    [41, 20], [46, 24], [49, 20], [49, 25], [49, 22], [52, 20], [52, 23],
-    [74, 18], [79, 18], [106, 20], [108, 17], [120, 20], [127, 20], [149, 18],
-    [160, 20], [177, 23], [184, 25], [199, 23], [200, 22], [209, 22],
-    [215, 22], [225, 20], [222, 20], [224, 20], [226, 20], [226, 20],
-    [227, 20], [224, 20], [227, 20],
-];
 
 async function createCircularAvatar(avatarBuffer) {
     // 生成圆形头像掩膜的SVG模板
@@ -40,7 +24,11 @@ async function createCircularAvatar(avatarBuffer) {
         .toBuffer();
 }
 
-async function overlayAvatarOnGif(gifBuffer, avatarBuffer,delay) {
+async function overlayAvatarOnGif(gifBuffer, avatarBuffer,delay,selectedSource) {
+    let avatarPositions = "";
+    if (selectedSource === "2.gif"){
+        avatarPositions = gif2Positions;
+    }
     const gif = parseGIF(gifBuffer);
     const frames = decompressFrames(gif, true);
     const gifWidth = gif.lsd.width;
@@ -112,12 +100,12 @@ app.use(express.json({ limit: '10mb' }));
 
 app.post('/emoji-app/emoji/uploadEmoji', async (req, res) => {
     try {
-        const { base64,delay } = req.body;
-
+        const { base64,delay,selectedSource } = req.body;
+        const GIF_PATH = path.join(__dirname, 'public', 'static', selectedSource);
         const gifBuffer = await fs.readFile(GIF_PATH);
         const avatarBuffer = Buffer.from(base64.replace(/^data:image\/\w+;base64,/, ''), 'base64');
 
-        const resultBuffer = await overlayAvatarOnGif(gifBuffer, avatarBuffer,delay);
+        const resultBuffer = await overlayAvatarOnGif(gifBuffer, avatarBuffer,delay,selectedSource);
         // await fs.writeFile(OUTPUT_PATH, resultBuffer);
         // const resultBase64
         // 直接返回 base64 字符串（可直接用 img src="data:image/gif;base64,...）
@@ -129,7 +117,42 @@ app.post('/emoji-app/emoji/uploadEmoji', async (req, res) => {
         res.status(500).json({ success: false, message: '服务器内部错误' });
     }
 });
+const fs2 = require('fs');
+const {gif2Positions} = require("./src/positions/gif2");
+// GET 接口：获取 gif2 文件夹下的所有图片并转为 Base64
+app.post('/api/images', async (req, res) => {
 
+    const {selectedSource} = req.body;
+    const folderPath = path.join(__dirname, 'public', 'frames', selectedSource);
+
+    try {
+        const files = fs2.readdirSync(folderPath);
+        const images = [];
+
+        for (const file of files) {
+            const ext = path.extname(file).toLowerCase();
+            if (['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp'].includes(ext)) {
+                const filePath = path.join(folderPath, file);
+                const fileData = fs2.readFileSync(filePath);
+                const base64Image = `data:image/${ext.slice(1)};base64,${fileData.toString('base64')}`;
+                images.push({
+                    filename: file,
+                    data: base64Image
+                });
+            }
+        }
+
+        res.json({
+            success: true,
+            count: images.length,
+            images,
+            avatarPositions: gif2Positions,
+        });
+    } catch (error) {
+        console.error('Error reading images:', error);
+        res.status(500).json({ success: false, message: 'Failed to load images.' });
+    }
+});
 app.listen(PORT, () => {
     console.log(`✅ Server running at http://localhost:${PORT}`);
 });
