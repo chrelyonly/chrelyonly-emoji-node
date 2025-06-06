@@ -58,7 +58,8 @@
                             placeholder="请选择素材来源"
                             style="width: 200px"
                     >
-                        <el-option label="左右猫猫图素材" value="gif2" />
+                        <el-option label="左右猫猫图素材" value="gif2"></el-option>
+                        <el-option label="雷劈猫猫图素材" value="gif3"></el-option>
                         <!-- 可根据需要扩展 -->
                     </el-select>
 
@@ -72,6 +73,17 @@
                 <el-button type="success" :loading="loadingBtn" @click="copyAvatarPositions">
                     保存生成的坐标数组
                 </el-button>
+                <el-form-item label="头像大小XY">
+                    <el-input-number
+                            v-model="avatarWidth"
+                            :min="50"
+                            :max="600"
+                            :step="10"
+                            controls-position="right"
+                            :precision="0"
+                            style="width: 100%;"
+                    />
+                </el-form-item>
             </div>
 
             <div v-if="framesList.length" style="margin-top: 20px;">
@@ -80,10 +92,13 @@
                         <el-card :body-style="{ padding: '10px' }">
                             <div style="position:relative;">
                                 <img :src="img.data"  />
-                                <div style="background-color:#78D2CC;width: 145px;height: 145px;border-radius: 50%;position:absolute;"
+                                <div style="background-color:#78D2CC;border-radius: 50%;position:absolute;"
                                  :style="{
                                    left: avatarPositions[idx][0] + 'px',
-                                   top: avatarPositions[idx][1] + 'px'
+                                   top: avatarPositions[idx][1] + 'px',
+                                   width: avatarPositions[idx][2] + 'px',
+                                   height: avatarPositions[idx][2] + 'px',
+                                   opacity: 0.5
                                  }"
                                 ></div>
                                 <!-- 按钮组 -->
@@ -92,9 +107,26 @@
                                         <el-button size="small"  @click="moveUp(idx)" >上</el-button>
                                         <el-button size="small"  @click="moveDown(idx)">下</el-button>
                                         <el-button size="small"  @click="moveRight(idx)">右</el-button>
-                                    <div>
+                                    <div
+                                            v-if="avatarPositions[idx]">
                                         <el-tag>X: {{avatarPositions[idx][0]}}</el-tag>
                                         <el-tag>y: {{avatarPositions[idx][1]}}</el-tag>
+                                        <el-tag>头像尺寸: {{avatarPositions[idx][2]}}</el-tag>
+                                        <div>
+                                            <el-input-number
+                                                    v-model="avatarPositions[idx][0]"
+                                            />
+                                        </div>
+                                        <div>
+                                            <el-input-number
+                                                    v-model="avatarPositions[idx][1]"
+                                            />
+                                        </div>
+                                        <div>
+                                            <el-input-number
+                                                    v-model="avatarPositions[idx][2]"
+                                            />
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -132,11 +164,12 @@
             const framesList = ref([]);
             const avatarPositions = ref([]);
             const loadingBtn = ref(false);
-            const selectedSource = "gif2";
+            const selectedSource = ref("");
+            const avatarWidth = ref(100);
 
             const fetchHistory = () => {
                 loadingBtn.value = true;
-                axios.post('/emoji-app/emoji/images',{selectedSource: selectedSource})
+                axios.post('/emoji-app/emoji/images',{selectedSource: selectedSource.value})
                     .then(res => {
                         if (res.data.success) {
                             framesList.value = res.data.images;
@@ -175,6 +208,7 @@
                 fetchHistory,
                 copyAvatarPositions,
                 selectedSource,
+                avatarWidth
 
             };
         }

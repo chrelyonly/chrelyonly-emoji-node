@@ -24,23 +24,20 @@ async function createCircularAvatar(avatarBuffer,width) {
         .toBuffer();
 }
 
-async function overlayAvatarOnGif(gifBuffer, avatarBuffer,delay,selectedSource,width) {
+async function overlayAvatarOnGif(gifBuffer, avatarBuffer,delay,selectedSource) {
     let avatarPositions = "";
     if (selectedSource === "2.gif"){
         avatarPositions = gif2Positions;
+    }
+    if (selectedSource === "3.gif"){
+        avatarPositions = gif3Positions;
     }
     const gif = parseGIF(gifBuffer);
     const frames = decompressFrames(gif, true);
     const gifWidth = gif.lsd.width;
     const gifHeight = gif.lsd.height;
 
-    // 处理头像圆形裁剪并获取 raw 数据
-    const circularAvatarBuffer = await createCircularAvatar(avatarBuffer,width);
-    const avatarImage = await sharp(circularAvatarBuffer)
-        .ensureAlpha()
-        .raw()
-        .toBuffer({ resolveWithObject: true });
-    const { data: avatarRaw, info: avatarInfo } = avatarImage;
+
 
     // 初始化 GIFEncoder
     const encoder = new GIFEncoder(gifWidth, gifHeight);
@@ -55,6 +52,17 @@ async function overlayAvatarOnGif(gifBuffer, avatarBuffer,delay,selectedSource,w
     encoder.start();
 
     for (let i = 0; i < frames.length; i++) {
+        // 处理头像圆形裁剪并获取 raw 数据
+        const circularAvatarBuffer = await createCircularAvatar(avatarBuffer,avatarPositions[i][2]);
+        const avatarImage = await sharp(circularAvatarBuffer)
+            .ensureAlpha()
+            .raw()
+            .toBuffer({ resolveWithObject: true });
+        const { data: avatarRaw, info: avatarInfo } = avatarImage;
+
+
+
+
         const frame = frames[i];
         const frameImageBuffer = await sharp(frame.patch, {
             raw: {
@@ -117,8 +125,24 @@ app.post('/emoji-app/emoji/uploadEmoji', async (req, res) => {
         res.status(500).json({ success: false, message: '服务器内部错误' });
     }
 });
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// 测试用
 const fs2 = require('fs');
 const {gif2Positions} = require("./src/positions/gif2");
+const {gif3Positions} = require("./src/positions/gif3");
 // GET 接口：获取 gif2 文件夹下的所有图片并转为 Base64
 app.post('/emoji-app/emoji/images', async (req, res) => {
 
@@ -146,7 +170,7 @@ app.post('/emoji-app/emoji/images', async (req, res) => {
             success: true,
             count: images.length,
             images,
-            avatarPositions: gif2Positions,
+            avatarPositions: gif3Positions,
         });
     } catch (error) {
         console.error('Error reading images:', error);

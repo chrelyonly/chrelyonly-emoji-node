@@ -65,7 +65,7 @@
             padding: 40px;
             color: #666;
         }
-        
+
         /* Cropper.js 样式 - 内联版本 */
         .cropper-container {
             direction: ltr;
@@ -316,9 +316,9 @@
                     <img :src="previewUrl" style="width: 150px;height: 150px;border-radius: 50%" />
                 </div>
                 <div>
-                    <el-button 
-                        type="primary" 
-                        size="small" 
+                    <el-button
+                        type="primary"
+                        size="small"
                         class="crop-btn"
                         @click="openCropDialog"
                         :disabled="!originalImage"
@@ -385,16 +385,15 @@
             </div>
         </div>
         <div style="text-align: center; margin-bottom: 20px;">
-            <el-space direction="horizontal" alignment="center">
                 <el-select
                         v-model="selectedSource"
                         placeholder="请选择素材来源"
                         style="width: 200px"
                 >
-                    <el-option label="左右猫猫图素材" value="2.gif" />
+                    <el-option label="左右猫猫图素材" value="2.gif" key="2.gif"></el-option>
+                    <el-option label="雷劈猫猫图素材" value="3.gif" key="3.gif"></el-option>
                     <!-- 可根据需要扩展 -->
                 </el-select>
-            </el-space>
         </div>
         <div style="text-align: center; margin-top: 20px;">
             <el-button
@@ -482,7 +481,7 @@
             // 新增两个响应式数据：delay和width
             const delay = ref(15);
             const width = ref(155);
-            const selectedSource = ref("2.gif");
+            const selectedSource = ref("");
 
             const handleChange = (uploadFile) => {
                 const file = uploadFile.raw;
@@ -497,15 +496,15 @@
 
             const openCropDialog = async () => {
                 if (!originalImage.value) return;
-                
+
                 cropDialogVisible.value = true;
                 cropperLoading.value = true;
-                
+
                 try {
                     // 加载 Cropper.js
                     const CropperClass = await loadCropperJS();
                     cropperLoading.value = false;
-                    
+
                     await nextTick();
                     initCropper(CropperClass);
                 } catch (error) {
@@ -521,14 +520,14 @@
                     cropper.destroy();
                     cropper = null;
                 }
-                
+
                 const imageElement = cropImage.value;
-                
+
                 if (!imageElement) {
                     console.error('找不到图片元素');
                     return;
                 }
-                
+
                 try {
                     console.log('开始初始化 Cropper...');
                     cropper = new CropperClass(imageElement, {
@@ -561,7 +560,7 @@
                     ElementPlus.ElMessage.error('裁切工具未初始化');
                     return;
                 }
-                
+
                 try {
                     const canvas = cropper.getCroppedCanvas({
                         width: 300,
@@ -569,16 +568,16 @@
                         imageSmoothingEnabled: true,
                         imageSmoothingQuality: 'high',
                     });
-                    
+
                     if (!canvas) {
                         ElementPlus.ElMessage.error('无法生成裁切后的图片');
                         return;
                     }
-                    
+
                     const croppedDataUrl = canvas.toDataURL('image/jpeg', 0.9);
                     previewUrl.value = croppedDataUrl;
                     base64Image.value = croppedDataUrl.split(',')[1];
-                    
+
                     cropDialogVisible.value = false;
                     ElementPlus.ElMessage.success('图片裁切完成');
                 } catch (error) {
