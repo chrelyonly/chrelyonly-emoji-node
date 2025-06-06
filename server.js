@@ -120,7 +120,7 @@ app.post('/emoji-app/emoji/uploadEmoji', async (req, res) => {
 const fs2 = require('fs');
 const {gif2Positions} = require("./src/positions/gif2");
 // GET 接口：获取 gif2 文件夹下的所有图片并转为 Base64
-app.post('/api/images', async (req, res) => {
+app.post('/emoji-app/emoji/images', async (req, res) => {
 
     const {selectedSource} = req.body;
     const folderPath = path.join(__dirname, 'public', 'frames', selectedSource);

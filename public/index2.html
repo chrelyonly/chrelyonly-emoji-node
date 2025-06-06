@@ -136,7 +136,7 @@
 
             const fetchHistory = () => {
                 loadingBtn.value = true;
-                axios.post('/api/images',{selectedSource: selectedSource})
+                axios.post('/emoji-app/emoji/images',{selectedSource: selectedSource})
                     .then(res => {
                         if (res.data.success) {
                             framesList.value = res.data.images;
