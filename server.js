@@ -41,7 +41,7 @@ async function overlayAvatarOnGif(gifBuffer, avatarBuffer,delay,selectedSource) 
 
     // 初始化 GIFEncoder
     const encoder = new GIFEncoder(gifWidth, gifHeight);
-    encoder.setRepeat(gif.appExtensions?.[0]?.loopCount ?? 0);
+    encoder.setRepeat(0);
     encoder.setTransparent(0x00FF00); // 绿色透明色 (R:0, G:255, B:0)
 
     // 通过 PassThrough 监听编码流
