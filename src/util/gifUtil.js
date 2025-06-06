@@ -1,5 +1,4 @@
 
-const { GifFrame, GifUtil } = require('gifwrap');
 const sharp = require('sharp');
 const {gif2Positions} = require("../positions/gif2");
 const {gif3Positions} = require("../positions/gif3");
