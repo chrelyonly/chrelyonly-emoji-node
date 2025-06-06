@@ -7,24 +7,24 @@ const GIFEncoder = require('gif-encoder-2');
 const app = express();
 
 const PORT = 3000;
-const AVATAR_SIZE = 155;
-const AVATAR_RADIUS = AVATAR_SIZE / 2;
+// const AVATAR_SIZE = 155;
+// const AVATAR_RADIUS = AVATAR_SIZE / 2;
 
 
-async function createCircularAvatar(avatarBuffer) {
+async function createCircularAvatar(avatarBuffer,width) {
     // 生成圆形头像掩膜的SVG模板
     const circleSVG = Buffer.from(
-        `<svg width="${AVATAR_SIZE}" height="${AVATAR_SIZE}"><circle cx="${AVATAR_RADIUS}" cy="${AVATAR_RADIUS}" r="${AVATAR_RADIUS}" fill="white"/></svg>`
+        `<svg width="${width}" height="${width}"><circle cx="${width/2}" cy="${width/2}" r="${width/2}" fill="white"/></svg>`
     );
 
     return sharp(avatarBuffer)
-        .resize(AVATAR_SIZE, AVATAR_SIZE)
+        .resize(width, width)
         .composite([{ input: circleSVG, blend: 'dest-in' }])
         .png()
         .toBuffer();
 }
 
-async function overlayAvatarOnGif(gifBuffer, avatarBuffer,delay,selectedSource) {
+async function overlayAvatarOnGif(gifBuffer, avatarBuffer,delay,selectedSource,width) {
     let avatarPositions = "";
     if (selectedSource === "2.gif"){
         avatarPositions = gif2Positions;
@@ -35,7 +35,7 @@ async function overlayAvatarOnGif(gifBuffer, avatarBuffer,delay,selectedSource) 
     const gifHeight = gif.lsd.height;
 
     // 处理头像圆形裁剪并获取 raw 数据
-    const circularAvatarBuffer = await createCircularAvatar(avatarBuffer);
+    const circularAvatarBuffer = await createCircularAvatar(avatarBuffer,width);
     const avatarImage = await sharp(circularAvatarBuffer)
         .ensureAlpha()
         .raw()
@@ -100,12 +100,12 @@ app.use(express.json({ limit: '10mb' }));
 
 app.post('/emoji-app/emoji/uploadEmoji', async (req, res) => {
     try {
-        const { base64,delay,selectedSource } = req.body;
+        const { base64,delay,selectedSource,width } = req.body;
         const GIF_PATH = path.join(__dirname, 'public', 'static', selectedSource);
         const gifBuffer = await fs.readFile(GIF_PATH);
         const avatarBuffer = Buffer.from(base64.replace(/^data:image\/\w+;base64,/, ''), 'base64');
 
-        const resultBuffer = await overlayAvatarOnGif(gifBuffer, avatarBuffer,delay,selectedSource);
+        const resultBuffer = await overlayAvatarOnGif(gifBuffer, avatarBuffer,delay,selectedSource,width);
         // await fs.writeFile(OUTPUT_PATH, resultBuffer);
         // const resultBase64
         // 直接返回 base64 字符串（可直接用 img src="data:image/gif;base64,...）
