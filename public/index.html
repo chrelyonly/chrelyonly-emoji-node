@@ -49,7 +49,6 @@
 
         <el-upload
                 drag
-                :limit="1"
                 accept="image/*"
                 :auto-upload="false"
                 :on-change="handleChange"
@@ -81,7 +80,7 @@
                 </el-form-item>
             </div>
             <div>
-                <el-form-item label="输出宽度 (px)(无效)">
+                <el-form-item label="头像大小XY">
                     <el-input-number
                             v-model="width"
                             :min="50"
@@ -140,8 +139,8 @@
             const uploading = ref(false);
 
             // 新增两个响应式数据：delay和width
-            const delay = ref(100);
-            const width = ref(200);
+            const delay = ref(15);
+            const width = ref(155);
             const selectedSource = ref("2.gif");
 
             const handleChange = (uploadFile) => {
