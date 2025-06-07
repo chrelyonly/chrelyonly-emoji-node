@@ -1,101 +1,137 @@
+const fs = require("fs");
+const fsPromise = require('fs/promises');
+const os = require("os");
+const path = require("path");
+const sharp = require("sharp");
+const ffmpeg = require("fluent-ffmpeg");
 
-const sharp = require('sharp');
-const {gif2Positions} = require("../positions/gif2");
-const {gif3Positions} = require("../positions/gif3");
-const {parseGIF, decompressFrames} = require("gifuct-js");
-const GIFEncoder = require("gif-encoder-2");
 
-async function createCircularAvatar(avatarBuffer,width) {
-    // 生成圆形头像掩膜的SVG模板
-    const circleSVG = Buffer.from(
-        `<svg width="${width}" height="${width}"><circle cx="${width/2}" cy="${width/2}" r="${width/2}" fill="white"/></svg>`
-    );
+// 判断平台
+const platform = os.platform(); // 或 process.platform
+if (platform === 'win32') {
+    // Windows 系统
+    ffmpeg.setFfmpegPath(path.join(__dirname, 'src', 'lib',"win", 'ffmpeg.exe'));
+} else if (platform === 'darwin') {
+    // macOS 系统
+    ffmpeg.setFfmpegPath(path.join(__dirname, 'src', 'lib',"mac", 'ffmpeg-mac'));
+} else if (platform === 'linux') {
+    // Linux 系统
+    ffmpeg.setFfmpegPath(path.join(__dirname, 'src', 'lib',"linux", 'ffmpeg-linux'));
+} else {
+    throw new Error(`Unsupported platform: ${platform}`);
+}
 
-    return sharp(avatarBuffer)
+
+
+
+const { gif2Positions } = require("../positions/gif2");
+const { gif3Positions } = require("../positions/gif3");
+
+
+
+
+async function createCircularAvatar(avatarBuffer, width, outputPath) {
+    const svg = `<svg width="${width}" height="${width}">
+    <circle cx="${width / 2}" cy="${width / 2}" r="${width / 2}" fill="white"/>
+  </svg>`;
+
+    await sharp(avatarBuffer)
         .resize(width, width)
-        .composite([{ input: circleSVG, blend: 'dest-in' }])
+        .composite([{ input: Buffer.from(svg), blend: "dest-in" }])
         .png()
-        .toBuffer();
+        .toFile(outputPath);
 }
 
-async function overlayAvatarOnGif(gifBuffer, avatarBuffer,delay,selectedSource) {
-    let avatarPositions = "";
-    if (selectedSource === "2.gif"){
-        avatarPositions = gif2Positions;
+/**
+ * gif生成
+ * @param inputAvatar 上传的头像
+ * @param delay 帧数
+ * @param selectedSource 资源名称
+ * @returns {Promise<Buffer<ArrayBuffer>>} 文件二进制数组
+ */
+async function overlayAvatarOnGif(inputAvatar,delay, selectedSource) {
+    // 返回的内容
+    let resultBuffer;
+    // 获取资源底图
+    const GIF_PATH = path.join('public', 'static', selectedSource);
+
+// 创建临时资源用来合成gif
+    const tmpDir = fs.mkdtempSync(path.join("temp", "gif-avatar-"));
+    const gifPath = path.join(tmpDir, "input.gif");
+    const avatarPath = path.join(tmpDir, "avatar.png");
+    const outputGif = path.join(tmpDir, "output.gif");
+    try {
+        const gifBuffer = await fsPromise.readFile(GIF_PATH);
+        const avatarBuffer = Buffer.from(inputAvatar.replace(/^data:image\/\w+;base64,/, ''), 'base64');
+        // 读取素材图写入到工作区
+        fs.writeFileSync(gifPath, gifBuffer);
+
+        // 头像替换点
+        let positions = "";
+        if (selectedSource === "2.gif"){
+            positions = gif2Positions
+        }else if (selectedSource === "3.gif"){
+            positions = gif3Positions
+        }else{
+            return Buffer.alloc(0);
+        }
+
+        // 拆帧
+        const framePattern = path.join(tmpDir, "frame_%03d.png");
+        await new Promise((resolve, reject) => {
+            ffmpeg(gifPath)
+                .output(framePattern)
+                .on("end", resolve)
+                .on("error", reject)
+                .run();
+        });
+
+        // 叠加每帧
+        for (let i = 0; i < positions.length; i++) {
+            const [x, y] = positions[i];
+            const frameInput = path.join(tmpDir, `frame_${String(i + 1).padStart(3, "0")}.png`);
+            const frameOutput = path.join(tmpDir, `overlay_${String(i + 1).padStart(3, "0")}.png`);
+
+            // 从第一帧中获取宽高数据
+            const avatarSize = positions[i][2];
+            await createCircularAvatar(avatarBuffer, avatarSize, avatarPath);
+            await new Promise((resolve, reject) => {
+                ffmpeg()
+                    .input(frameInput)
+                    .input(avatarPath)
+                    .complexFilter([`overlay=${x}:${y}`])
+                    .output(frameOutput)
+                    .on("end", resolve)
+                    .on("error", reject)
+                    .run();
+            });
+        }
+
+        // 合成 gif
+        // const fps = Math.round(100 / delay);
+        await new Promise((resolve, reject) => {
+            ffmpeg()
+                .input(path.join(tmpDir, "overlay_%03d.png"))
+                .inputFPS(delay)
+                .outputOptions("-loop", "0")
+                .output(outputGif)
+                .on("end", resolve)
+                .on("error", reject)
+                .run();
+        });
+
+        resultBuffer = fs.readFileSync(outputGif);
+    }catch (e) {
+        console.log("系统内异常")
+        console.log(e)
+    }finally {
+        // 始终删除临时文件
+        fs.rmSync(tmpDir, { recursive: true, force: true });
     }
-    if (selectedSource === "3.gif"){
-        avatarPositions = gif3Positions;
-    }
-    const gif = parseGIF(gifBuffer);
-    const frames = decompressFrames(gif, true);
-    const gifWidth = gif.lsd.width;
-    const gifHeight = gif.lsd.height;
 
-    // 初始化 GIFEncoder
-    const encoder = new GIFEncoder(gifWidth, gifHeight);
-    encoder.setRepeat(0);
-    encoder.setTransparent(0x00FF00); // 绿色透明色 (R:0, G:255, B:0)
-
-    // 通过 PassThrough 监听编码流
-    const stream = encoder.createReadStream();
-    const chunks = [];
-    stream.on('data', chunk => chunks.push(chunk));
-
-    encoder.start();
-
-    for (let i = 0; i < frames.length; i++) {
-        // 处理头像圆形裁剪并获取 raw 数据
-        const circularAvatarBuffer = await createCircularAvatar(avatarBuffer,avatarPositions[i][2]);
-        const avatarImage = await sharp(circularAvatarBuffer)
-            .ensureAlpha()
-            .raw()
-            .toBuffer({ resolveWithObject: true });
-        const { data: avatarRaw, info: avatarInfo } = avatarImage;
-
-
-
-
-        const frame = frames[i];
-        const frameImageBuffer = await sharp(frame.patch, {
-            raw: {
-                width: frame.dims.width,
-                height: frame.dims.height,
-                channels: 4,
-            },
-        })
-            .resize(gifWidth, gifHeight, { fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 } })
-            .composite([
-                {
-                    input: avatarRaw,
-                    raw: {
-                        width: avatarInfo.width,
-                        height: avatarInfo.height,
-                        channels: 4,
-                    },
-                    left: avatarPositions[i % avatarPositions.length][0] - 4,
-                    top: avatarPositions[i % avatarPositions.length][1] - 4,
-                    blend: 'over',
-                },
-            ])
-            .raw()
-            .toBuffer();
-
-        encoder.setDelay(delay); // 优先使用原帧延迟
-        encoder.addFrame(frameImageBuffer);
-    }
-
-    encoder.finish();
-
-    await new Promise((resolve, reject) => {
-        stream.on('end', resolve);
-        stream.on('error', reject);
-    });
-
-    return Buffer.concat(chunks);
+    return resultBuffer;
 }
-
-
 
 module.exports = {
-    overlayAvatarOnGif
-}
+    overlayAvatarOnGif,
+};

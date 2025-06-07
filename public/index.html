@@ -29,15 +29,6 @@
             margin-top: 30px;
             border: 2px solid #4CAF50;
         }
-        .input-group {
-            margin: 20px 0;
-            display: flex;
-            justify-content: space-between;
-            gap: 20px;
-        }
-        .input-group > div {
-            flex: 1;
-        }
         .cropper-container {
             max-width: 100%;
             max-height: 400px;
@@ -291,6 +282,10 @@
     </style>
 </head>
 <body>
+<script src="https://unpkg.com/vue@3"></script>
+<script src="https://unpkg.com/element-plus"></script>
+<script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+<script src="https://unpkg.com/@element-plus/icons-vue"></script>
 <div id="app">
     <el-card>
         <template #header>
@@ -356,33 +351,34 @@
         </el-dialog>
 
         <!-- 新增输入项 -->
-        <div class="input-group" v-if="previewUrl">
+        <div  v-if="previewUrl">
             <div>
-                <el-form-item label="GIF 帧延迟">
+                <el-form-item label="GIF帧(真FPS数,帧数过少会卡顿,过多会出现异常(推荐30-60)">
                     <el-input-number
                             v-model="delay"
                             :min="1"
-                            :max="1000"
+                            :max="120"
                             :step="10"
+                            placeholder="填写1-120帧以内,推荐30-60帧,45帧满足gif流畅"
                             controls-position="right"
                             :precision="0"
                             style="width: 100%;"
                     />
                 </el-form-item>
             </div>
-            <div>
-                <el-form-item label="头像大小XY">
-                    <el-input-number
-                            v-model="width"
-                            :min="50"
-                            :max="600"
-                            :step="10"
-                            controls-position="right"
-                            :precision="0"
-                            style="width: 100%;"
-                    />
-                </el-form-item>
-            </div>
+<!--            <div>-->
+<!--                <el-form-item label="头像大小XY">-->
+<!--                    <el-input-number-->
+<!--                            v-model="width"-->
+<!--                            :min="50"-->
+<!--                            :max="600"-->
+<!--                            :step="10"-->
+<!--                            controls-position="right"-->
+<!--                            :precision="0"-->
+<!--                            style="width: 100%;"-->
+<!--                    />-->
+<!--                </el-form-item>-->
+<!--            </div>-->
         </div>
         <div style="text-align: center; margin-bottom: 20px;">
                 <el-select
@@ -413,10 +409,6 @@
     </el-card>
 </div>
 
-<script src="https://unpkg.com/vue@3"></script>
-<script src="https://unpkg.com/element-plus"></script>
-<script src="https://unpkg.com/axios/dist/axios.min.js"></script>
-<script src="https://unpkg.com/@element-plus/icons-vue"></script>
 
 <script>
     const { createApp, ref, nextTick } = Vue;
@@ -479,7 +471,7 @@
             let cropper = null;
 
             // 新增两个响应式数据：delay和width
-            const delay = ref(15);
+            const delay = ref(45);
             const width = ref(155);
             const selectedSource = ref("");
 
@@ -606,14 +598,21 @@
             };
 
             const upload = () => {
+                if (delay.value > 120 || delay.value < 1){
+                    ElementPlus.ElMessage.error('最低不低于1帧或者超过120帧');
+                    return;
+                }
                 uploading.value = true;
                 axios.post('/emoji-app/emoji/uploadEmoji', {
                     base64: base64Image.value,
                     delay: delay.value,
-                    width: width.value,
                     selectedSource: selectedSource.value
                 }).then(res => {
-                    gifUrl.value = res.data.data;
+                    if (res.data.code === 200){
+                        gifUrl.value = res.data.data;
+                    }else {
+                        ElementPlus.ElMessage.error(res.data.msg);
+                    }
                 }).catch(() => {
                     ElementPlus.ElMessage.error('生成失败');
                 }).finally(() => {
