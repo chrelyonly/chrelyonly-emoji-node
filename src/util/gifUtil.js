@@ -1,3 +1,11 @@
+/**
+ * overlayAvatarOnGif.js
+ *
+ * 作者: chrelyonly
+ * 创建时间: 2025年6月7日
+ * 描述: 将圆形头像覆盖到指定位置的 GIF 每一帧上，支持多平台的 ffmpeg 路径处理。
+ */
+
 const fs = require("fs");
 const fsPromise = require("fs/promises");
 const os = require("os");
@@ -6,7 +14,7 @@ const sharp = require("sharp");
 const ffmpeg = require("fluent-ffmpeg");
 const pLimit = require("p-limit");
 
-// 平台检测
+// 根据运行平台设置 ffmpeg 执行路径
 const platform = os.platform();
 if (platform === "win32") {
     ffmpeg.setFfmpegPath(path.join("src", "lib", "win", "ffmpeg.exe"));
@@ -18,9 +26,16 @@ if (platform === "win32") {
     throw new Error(`Unsupported platform: ${platform}`);
 }
 
+// 引入对应 GIF 的头像位置信息
 const { gif2Positions } = require("../positions/gif2");
 const { gif3Positions } = require("../positions/gif3");
 
+/**
+ * 创建圆形头像并保存为 PNG 格式
+ * @param {Buffer} avatarBuffer - 原始头像的 buffer 数据
+ * @param {number} width - 输出头像的尺寸
+ * @param {string} outputPath - 输出路径
+ */
 async function createCircularAvatar(avatarBuffer, width, outputPath) {
     const svg = `<svg width="${width}" height="${width}">
     <circle cx="${width / 2}" cy="${width / 2}" r="${width / 2}" fill="white"/>
@@ -33,6 +48,13 @@ async function createCircularAvatar(avatarBuffer, width, outputPath) {
         .toFile(outputPath);
 }
 
+/**
+ * 将圆形头像叠加到 GIF 的每一帧指定位置上，并生成新 GIF
+ * @param {string} inputAvatar - base64 格式头像字符串
+ * @param {number} delay - 帧率（帧之间的间隔）
+ * @param {string} selectedSource - GIF 文件名 (例如: "2.gif", "3.gif")
+ * @returns {Promise<Buffer>} - 返回生成的 GIF buffer
+ */
 async function overlayAvatarOnGif(inputAvatar, delay, selectedSource) {
     let resultBuffer;
     const GIF_PATH = path.join("public", "static", selectedSource);
@@ -49,15 +71,17 @@ async function overlayAvatarOnGif(inputAvatar, delay, selectedSource) {
 
         fs.writeFileSync(gifPath, gifBuffer);
 
+        // 获取对应 GIF 的头像位置数组
         let positions = "";
         if (selectedSource === "2.gif") {
             positions = gif2Positions;
         } else if (selectedSource === "3.gif") {
             positions = gif3Positions;
         } else {
-            return Buffer.alloc(0);
+            return Buffer.alloc(0); // 不支持的 GIF
         }
 
+        // 使用 ffmpeg 提取 GIF 每一帧为 PNG
         const framePattern = path.join(tmpDir, "frame_%03d.png");
         await new Promise((resolve, reject) => {
             ffmpeg(gifPath)
@@ -67,6 +91,7 @@ async function overlayAvatarOnGif(inputAvatar, delay, selectedSource) {
                 .run();
         });
 
+        // 为不同尺寸缓存裁剪好的圆形头像
         const avatarCache = new Map();
         for (const [_, __, size] of positions) {
             if (!avatarCache.has(size)) {
@@ -76,7 +101,8 @@ async function overlayAvatarOnGif(inputAvatar, delay, selectedSource) {
             }
         }
 
-        const limit = pLimit(4); // 并发上限
+        // 限制并发数为4，处理每一帧的头像叠加
+        const limit = pLimit(4);
         const frameOverlayPromises = positions.map(([x, y, size], i) =>
             limit(async () => {
                 const frameInput = path.join(
@@ -98,7 +124,7 @@ async function overlayAvatarOnGif(inputAvatar, delay, selectedSource) {
 
         const overlayPattern = path.join(tmpDir, "overlay_%03d.png");
 
-        // 合并 palettegen 和 paletteuse
+        // 使用 palettegen 和 paletteuse 保持透明度合成新的 GIF
         await new Promise((resolve, reject) => {
             ffmpeg()
                 .input(overlayPattern)
@@ -117,12 +143,14 @@ async function overlayAvatarOnGif(inputAvatar, delay, selectedSource) {
     } catch (e) {
         console.error("系统内异常", e);
     } finally {
+        // 清理临时目录
         fs.rmSync(tmpDir, { recursive: true, force: true });
     }
 
     return resultBuffer;
 }
 
+// 导出主函数
 module.exports = {
     overlayAvatarOnGif,
 };
