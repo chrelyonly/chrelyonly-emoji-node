@@ -1,8 +1,13 @@
 重新用node写了一遍,java的gif编码器有点问题,但是node的gif编码器也不好用(已解决)
 ## 建议
 ### 浏览器的gif播放有帧限制,过低会导致gif动画异常(即使保存出来也异常),用请求工具直接访问接口拿gif可以无视浏览器帧限制
-
-## 已修改为内置ffmpeg独立编译精简版
+### ffmpeg
+#### 1.已修改为内置ffmpeg独立编译精简版
+#### 2.使用官方仓库代码编译,2025年6月9日14:23:17的克隆
+```
+https://github.com/FFmpeg/FFmpeg.git
+https://github.com/chrelyonly/chrelyonly-ffmpeg-gif
+```
 ### 暂不兼容mac系统和arm架构的
 # 
 ## 使用ffmpeg进行gif编码,不再使用自带的库
