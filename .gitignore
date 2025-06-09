@@ -22,4 +22,4 @@ pnpm-debug.log*
 *.sln
 *.sw?
 
-src/lib/win/ffmpeg.exe
+#src/lib/win/ffmpeg.exe
