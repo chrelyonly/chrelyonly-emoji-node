@@ -8,6 +8,11 @@
 https://github.com/FFmpeg/FFmpeg.git
 https://github.com/chrelyonly/chrelyonly-ffmpeg-gif
 ```
+## 环境node
+### 建议node20 使用pnpm
+``` 
+pnpm install
+```
 ### 暂不兼容mac系统和arm架构的
 # 
 ## 使用ffmpeg进行gif编码,不再使用自带的库
