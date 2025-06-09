@@ -127,7 +127,7 @@ async function overlayAvatarOnGif(inputAvatar, delay, selectedSource,rotate) {
                         .toBuffer();
 
                     await sharp(avatarComposite)
-                        .rotate(rotate)
+                        .rotate(rotate, { background: { r: 0, g: 0, b: 0, alpha: 0 } })
                         .toFile(frameOutput);
                 }
 
