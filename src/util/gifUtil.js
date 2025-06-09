@@ -115,17 +115,21 @@ async function overlayAvatarOnGif(inputAvatar, delay, selectedSource,rotate) {
                     `overlay_${String(i + 1).padStart(3, "0")}.png`
                 );
                 const avatarPath = avatarCache.get(size);
-                // await sharp(frameInput)
-                //     .composite([{ input: avatarPath, left: x, top: y }])
-                //     .toFile(frameOutput);
-                //这里必须拆解步骤,先合成图,在旋转,否则需要重新找点位
-                const avatarComposite = await sharp(frameInput)
-                    .composite([{ input: avatarPath, left: x, top: y }])
-                    .toBuffer();
+                // 无意义的操作就简化
+                if (rotate === 0|| rotate === 360){
+                    await sharp(frameInput)
+                        .composite([{ input: avatarPath, left: x, top: y }])
+                        .toFile(frameOutput);
+                }else{
+                    //这里必须拆解步骤,先合成图,在旋转,否则需要重新找点位
+                    const avatarComposite = await sharp(frameInput)
+                        .composite([{ input: avatarPath, left: x, top: y }])
+                        .toBuffer();
 
-                await sharp(avatarComposite)
-                    .rotate(rotate)
-                    .toFile(frameOutput);
+                    await sharp(avatarComposite)
+                        .rotate(rotate)
+                        .toFile(frameOutput);
+                }
 
             })
         );

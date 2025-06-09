@@ -46,6 +46,9 @@ app.post('/emoji-app/emoji/uploadEmoji', async (req, res) => {
         if (!base64 || !delay || !selectedSource || !rotate) {
             return res.json(R.fail("操作异常"));
         }
+        if (rotate < 0 || rotate > 360) {
+            return res.json(R.fail("旋转角度错误"));
+        }
 
         // 调用主逻辑处理
         const resultBuffer = await overlayAvatarOnGif(base64, delay, selectedSource,rotate);
