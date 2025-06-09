@@ -20,6 +20,10 @@ const fs2 = require('fs'); // 用于同步读取测试图片
 const { gif2Positions } = require("./src/positions/gif2");
 const { gif3Positions } = require("./src/positions/gif3");
 const { overlayAvatarOnGif } = require("./src/util/gifUtil");
+const {gif4Positions} = require("./src/positions/gif4");
+const {gif5Positions} = require("./src/positions/gif5");
+const {gif6Positions} = require("./src/positions/gif6");
+const {gif7Positions} = require("./src/positions/gif7");
 
 // 静态资源映射（如 HTML/JS/CSS 等）
 // 可访问路径: http://localhost:3000/emoji-app/xxx
@@ -96,12 +100,28 @@ app.post('/emoji-app/emoji/images', async (req, res) => {
                 });
             }
         }
-
+        // 获取对应 GIF 的头像位置数组
+        let positions = "";
+        if (selectedSource === "gif2") {
+            positions = gif2Positions;
+        } else if (selectedSource === "gif3") {
+            positions = gif3Positions;
+        } else if (selectedSource === "gif4") {
+            positions = gif4Positions;
+        } else if (selectedSource === "gif5") {
+            positions = gif5Positions;
+        } else if (selectedSource === "gif6") {
+            positions = gif6Positions;
+        } else if (selectedSource === "gif7") {
+            positions = gif7Positions;
+        } else {
+            return Buffer.alloc(0); // 不支持的 GIF
+        }
         res.json({
             success: true,
             count: images.length,
             images,
-            avatarPositions: gif3Positions, // 默认只返回 gif3 的位置数据
+            avatarPositions: positions,
         });
     } catch (error) {
         console.error('Error reading images:', error);
