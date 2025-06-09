@@ -40,15 +40,15 @@ app.use(express.json({ limit: '10mb' }));
  */
 app.post('/emoji-app/emoji/uploadEmoji', async (req, res) => {
     try {
-        const { base64, delay, selectedSource } = req.body;
+        const { base64, delay, selectedSource,rotate} = req.body;
 
         // 参数校验
-        if (!base64 || !delay || !selectedSource) {
+        if (!base64 || !delay || !selectedSource || !rotate) {
             return res.json(R.fail("操作异常"));
         }
 
         // 调用主逻辑处理
-        const resultBuffer = await overlayAvatarOnGif(base64, delay, selectedSource);
+        const resultBuffer = await overlayAvatarOnGif(base64, delay, selectedSource,rotate);
 
         if (!resultBuffer || resultBuffer.length < 1) {
             return res.json(R.fail("不支持的类型"));

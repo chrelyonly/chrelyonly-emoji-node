@@ -53,9 +53,10 @@ async function createCircularAvatar(avatarBuffer, width, outputPath) {
  * @param {string} inputAvatar - base64 格式头像字符串
  * @param {number} delay - 帧率（帧之间的间隔）
  * @param {string} selectedSource - GIF 文件名 (例如: "2.gif", "3.gif")
+ * @param rotate 旋转度数
  * @returns {Promise<Buffer>} - 返回生成的 GIF buffer
  */
-async function overlayAvatarOnGif(inputAvatar, delay, selectedSource) {
+async function overlayAvatarOnGif(inputAvatar, delay, selectedSource,rotate) {
     let resultBuffer;
     const GIF_PATH = path.join("public", "static", selectedSource);
     const tmpDir = fs.mkdtempSync(path.join("temp", "gif-avatar-"));
@@ -114,9 +115,18 @@ async function overlayAvatarOnGif(inputAvatar, delay, selectedSource) {
                     `overlay_${String(i + 1).padStart(3, "0")}.png`
                 );
                 const avatarPath = avatarCache.get(size);
-                await sharp(frameInput)
+                // await sharp(frameInput)
+                //     .composite([{ input: avatarPath, left: x, top: y }])
+                //     .toFile(frameOutput);
+                //这里必须拆解步骤,先合成图,在旋转,否则需要重新找点位
+                const avatarComposite = await sharp(frameInput)
                     .composite([{ input: avatarPath, left: x, top: y }])
+                    .toBuffer();
+
+                await sharp(avatarComposite)
+                    .rotate(rotate)
                     .toFile(frameOutput);
+
             })
         );
 
