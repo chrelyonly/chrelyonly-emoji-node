@@ -21,7 +21,7 @@ if (platform === "win32") {
 } else if (platform === "darwin") {
     ffmpeg.setFfmpegPath(path.join("src", "lib", "mac", "ffmpeg-mac"));
 } else if (platform === "linux") {
-    ffmpeg.setFfmpegPath(path.join("src", "lib", "linux", "ffmpeg-linux"));
+    ffmpeg.setFfmpegPath(path.join("src", "lib", "linux", "ffmpeg"));
 } else {
     throw new Error(`Unsupported platform: ${platform}`);
 }
