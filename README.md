@@ -4,6 +4,7 @@
 ### ffmpeg
 #### 1.已修改为内置ffmpeg独立编译精简版(仅仅占用10MB)
 #### 2.使用官方仓库代码编译,2025年6月9日14:23:17的克隆
+#### 3.打包依赖于系统lib,纯净系统可能会有问题(alpine之类的,需要转一些依赖)
 ```
 https://github.com/FFmpeg/FFmpeg.git
 https://github.com/chrelyonly/chrelyonly-ffmpeg-gif
