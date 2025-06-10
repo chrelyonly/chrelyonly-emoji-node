@@ -14,7 +14,7 @@ https://github.com/chrelyonly/chrelyonly-ffmpeg-gif
 ``` 
 pnpm install
 ```
-### 暂不兼容mac系统和arm架构的
+### 暂不兼容mac系统和arm架构的(自行安装对应系统的ffmpeg)
 # 
 ## 使用ffmpeg进行gif编码,不再使用自带的库
 ## 在这里预览效果
