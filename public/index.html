@@ -395,6 +395,7 @@
 <!--            </div>-->
         </div>
         <div style="text-align: center; margin-bottom: 20px;">
+            <el-form-item label="请选择素材来源:">
                 <el-select
                         v-model="selectedSource"
                         placeholder="请选择素材来源"
@@ -408,6 +409,7 @@
                     <el-option label="骑车猫猫图素材" value="7.gif" key="7.gif"></el-option>
                     <!-- 可根据需要扩展 -->
                 </el-select>
+            </el-form-item>
         </div>
         <div style="text-align: center; margin-top: 20px;">
             <el-button
@@ -623,6 +625,10 @@
                 }
                 if (rotate.value > 360 || rotate.value < 0){
                     ElementPlus.ElMessage.error('旋转度数不能超过360度');
+                    return;
+                }
+                if (!selectedSource.value){
+                    ElementPlus.ElMessage.error('请先选择素材来源');
                     return;
                 }
                 uploading.value = true;
