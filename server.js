@@ -19,7 +19,7 @@ const fs2 = require('fs'); // 用于同步读取测试图片
 
 const { gif2Positions } = require("./src/positions/gif2");
 const { gif3Positions } = require("./src/positions/gif3");
-const { overlayAvatarOnGif } = require("./src/util/gifUtil");
+const { overlayAvatarOnGif, textOnGif} = require("./src/util/gifUtil");
 const {gif4Positions} = require("./src/positions/gif4");
 const {gif5Positions} = require("./src/positions/gif5");
 const {gif6Positions} = require("./src/positions/gif6");
@@ -71,6 +71,48 @@ app.post('/emoji-app/emoji/uploadEmoji', async (req, res) => {
         res.status(500).json({ success: false, message: '服务器内部错误' });
     }
 });
+
+
+/**
+ * 文字合成
+ */
+app.post('/emoji-app/emoji/textToGif', async (req, res) => {
+    try {
+        const { textList, delay, selectedSource,rotate} = req.body;
+
+        // 参数校验
+        if (!textList || !delay || !selectedSource || !rotate) {
+            return res.json(R.fail("操作异常"));
+        }
+        if (rotate < 0 || rotate > 360) {
+            return res.json(R.fail("旋转角度错误"));
+        }
+
+        // 调用主逻辑处理
+        const resultBuffer = await textOnGif(textList, delay, selectedSource,rotate);
+
+        if (!resultBuffer || resultBuffer.length < 1) {
+            return res.json(R.fail("不支持的类型"));
+        }
+        res.setHeader("Content-Type", "image/gif");
+        res.setHeader("Content-Disposition", "inline; filename=output.gif");
+        res.send(resultBuffer);
+        // 转换为 base64 字符串响应
+        // const resultBase64 = resultBuffer.toString('base64');
+        // res.json(R.data(`data:image/gif;base64,${resultBase64}`));
+
+    } catch (error) {
+        console.error('处理失败:', error);
+        res.status(500).json({ success: false, message: '服务器内部错误' });
+    }
+});
+
+
+
+
+
+
+
 
 /**
  * API 接口：调试/预览某个 GIF 分帧图像和头像位置

@@ -33,6 +33,7 @@ const {gif4Positions} = require("../positions/gif4");
 const {gif5Positions} = require("../positions/gif5");
 const {gif6Positions} = require("../positions/gif6");
 const {gif7Positions} = require("../positions/gif7");
+const {gif8Positions} = require("../positions/gif8");
 
 /**
  * 创建圆形头像并保存为 PNG 格式
@@ -48,6 +49,48 @@ async function createCircularAvatar(avatarBuffer, width, outputPath) {
     await sharp(avatarBuffer)
         .resize(width, width)
         .composite([{ input: Buffer.from(svg), blend: "dest-in" }])
+        .png()
+        .toFile(outputPath);
+}
+/**
+ * 创建矩形文本并保存为 PNG 格式
+ * @param {string} text - 原始文字内容
+ * @param {number} width - 输出头像的尺寸
+ * @param {number} height - 输出头像的尺寸
+ * @param {string} outputPath - 输出路径
+ */
+async function createRectangularAvatar(text, width, height, outputPath) {
+    const maxCharsPerLine = Math.floor(width / 30); // 估算每行字符数
+    const lines = [];
+
+    for (let i = 0; i < text.length; i += maxCharsPerLine) {
+        lines.push(text.slice(i, i + maxCharsPerLine));
+    }
+
+    const fontSize = Math.floor(height / (lines.length + 1));
+    const lineHeight = fontSize * 1.2;
+    const startY = (height - lineHeight * lines.length) / 2 + fontSize / 2;
+
+    const svgText = lines.map((line, i) => {
+        const y = startY + i * lineHeight;
+        return `<text x="50%" y="${y}" text-anchor="middle" dominant-baseline="middle">${line}</text>`;
+    }).join("\n");
+
+    const svg = `
+    <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
+        <style>
+            text {
+                fill: #ffffff;
+                font-size: ${fontSize}px;
+                font-family: sans-serif;
+                font-weight: bold;
+            }
+        </style>
+        <rect width="100%" height="100%" fill="transparent"/>
+        ${svgText}
+    </svg>`;
+
+    await sharp(Buffer.from(svg))
         .png()
         .toFile(outputPath);
 }
@@ -176,7 +219,145 @@ async function overlayAvatarOnGif(inputAvatar, delay, selectedSource,rotate) {
     return resultBuffer;
 }
 
+
+/**
+ * 文生图
+ */
+const textOnGif = async  (textList, delay, selectedSource,rotate) => {
+    let resultBuffer;
+    const GIF_PATH = path.join("public", "static", selectedSource);
+    const tmpDir = fs.mkdtempSync(path.join("temp", "gif-text-"));
+    const gifPath = path.join(tmpDir, "input.gif");
+    const outputGif = path.join(tmpDir, "output.gif");
+
+    try {
+        const gifBuffer = await fsPromise.readFile(GIF_PATH);
+        fs.writeFileSync(gifPath, gifBuffer);
+        // 获取对应 GIF 的头像位置数组
+        let positions = "";
+        if (selectedSource === "8.gif") {
+            positions = gif8Positions;
+        } else {
+            return Buffer.alloc(0); // 不支持的 GIF
+        }
+
+        // 使用 ffmpeg 提取 GIF 每一帧为 PNG
+        const framePattern = path.join(tmpDir, "frame_%03d.png");
+        await new Promise((resolve, reject) => {
+            ffmpeg(gifPath)
+                .output(framePattern)
+                .on("end", resolve)
+                .on("error", reject)
+                .run();
+        });
+
+        // 为不同文字缓存裁剪好的图片
+        const textCache = new Map();
+        for (let i = 0; i < positions.length; i++) {
+        //     循环坐标点
+            let item = positions[i];
+            // 循环每一帧的每一张图片
+            for (let j = 0; j < item.length; j++) {
+                let item2 = item[j];
+                // 只在需要填充的坐标才处理
+                if (item2[4] > 0){
+                //     大于0的时候证明需要填充,否则不填充
+                    // 坐标作为缓存key
+                    let key = "" + item2[0] + item2[1] + item2[2] + item2[3] + item2[4];
+                    if (!textCache.has(key)) {
+                        // 语言必须与坐标关联上,这里应该报错的
+                        let textListElement;
+                        textListElement = textList[item2[4]-1];
+                        if (!textListElement) {
+                            continue; // ⚠️ 注意：这必须在 async limit 函数中，return 提前终止
+                        }
+                        const textPath = path.join(tmpDir, `text_${key}.png`);
+                        await createRectangularAvatar(textListElement, item2[2],item2[3], textPath);
+                        textCache.set(key, textPath);
+                    }
+                }
+            }
+
+        }
+        // 限制并发数为4，处理每一帧的头像叠加
+        const limit = pLimit(4);
+        // 循环合成png到gif
+
+        const frameOverlayPromises = []
+        positions.map((item) =>{
+// 循环每一帧的每一张图片
+            for (let j = 0; j < item.length; j++) {
+                let item2 = item[j];
+                let task = limit(async () => {
+                    // 获取刚才的切片
+                    const frameInput = path.join(
+                        tmpDir,
+                        `frame_${String(item2[5]).padStart(3, "0")}.png`
+                    );
+                    // 设置保存的切片
+                    const frameOutput = path.join(
+                        tmpDir,
+                        `overlay_${String(item2[5]).padStart(3, "0")}.png`
+                    );
+                    // 坐标作为缓存key
+                    let key = "" + item2[0] + item2[1] + item2[2] + item2[3] + item2[4];
+                    const textPath = textCache.get(key);
+                    // 无意义的操作就简化
+                    // 如果没有则不合并图片
+
+                    if (!textPath){
+                        await sharp(frameInput)
+                            .toFile(frameOutput);
+                    }else if (rotate === 0|| rotate === 360){
+                        await sharp(frameInput)
+                            .composite([{ input: textPath, left: item2[0], top: item2[1] }])
+                            .toFile(frameOutput);
+                    }else {
+                        //这里必须拆解步骤,先合成图,在旋转,否则需要重新找点位
+                        const avatarComposite = await sharp(frameInput)
+                            .composite([{ input: textPath, left: item2[0], top: item2[1] }])
+                            .toBuffer();
+
+                        await sharp(avatarComposite)
+                            .rotate(rotate, { background: { r: 0, g: 0, b: 0, alpha: 0 } })
+                            .toFile(frameOutput);
+                    }
+                })
+                frameOverlayPromises.push(task);
+            }
+        })
+        await Promise.all(frameOverlayPromises);
+
+        const overlayPattern = path.join(tmpDir, "overlay_%03d.png");
+
+        // 使用 palettegen 和 paletteuse 保持透明度合成新的 GIF
+        await new Promise((resolve, reject) => {
+            ffmpeg()
+                .input(overlayPattern)
+                .inputOptions(["-framerate", `${delay}`])
+                .outputOptions(["-loop", "0", "-y"])
+                .complexFilter([
+                    "[0:v] palettegen=reserve_transparent=1 [p]; [0:v][p] paletteuse",
+                ])
+                .output(outputGif)
+                .on("end", resolve)
+                .on("error", reject)
+                .run();
+        });
+
+        resultBuffer = fs.readFileSync(outputGif);
+    } catch (e) {
+        console.error("系统内异常", e);
+    } finally {
+        // 清理临时目录
+        fs.rmSync(tmpDir, { recursive: true, force: true });
+    }
+
+    return resultBuffer;
+}
+
 // 导出主函数
 module.exports = {
     overlayAvatarOnGif,
+    textOnGif
 };
