@@ -225,13 +225,14 @@ async function overlayAvatarOnGif(inputAvatar, delay, selectedSource,rotate) {
  */
 const textOnGif = async  (textList, delay, selectedSource,rotate) => {
     let resultBuffer;
-    const GIF_PATH = path.join("public", "static", selectedSource);
+    // const GIF_PATH = path.join("public", "static", selectedSource);
     const tmpDir = fs.mkdtempSync(path.join("temp", "gif-text-"));
     const gifPath = path.join(tmpDir, "input.gif");
     const outputGif = path.join(tmpDir, "output.gif");
 
     try {
-        const gifBuffer = await fsPromise.readFile(GIF_PATH);
+        // const gifBuffer = await fsPromise.readFile(GIF_PATH);
+        const gifBuffer = await $https(selectedSource,"get",{},3,{});
         fs.writeFileSync(gifPath, gifBuffer);
         // 获取对应 GIF 的头像位置数组
         let positions = "";

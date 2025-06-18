@@ -12,6 +12,8 @@ const PORT = 3000;
 
 // 通用响应工具函数（定义在 ./src/util/R）
 require("./src/util/R");
+require("./src/config/dateConfig.js");
+require("./src/util/https.js");
 
 const path = require('path');
 const fs = require('fs/promises');
