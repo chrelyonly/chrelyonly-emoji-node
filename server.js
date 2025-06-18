@@ -24,6 +24,7 @@ const {gif4Positions} = require("./src/positions/gif4");
 const {gif5Positions} = require("./src/positions/gif5");
 const {gif6Positions} = require("./src/positions/gif6");
 const {gif7Positions} = require("./src/positions/gif7");
+const {gif8Positions} = require("./src/positions/gif8");
 
 // 静态资源映射（如 HTML/JS/CSS 等）
 // 可访问路径: http://localhost:3000/emoji-app/xxx
@@ -114,6 +115,8 @@ app.post('/emoji-app/emoji/images', async (req, res) => {
             positions = gif6Positions;
         } else if (selectedSource === "gif7") {
             positions = gif7Positions;
+        } else if (selectedSource === "gif8") {
+            positions = gif8Positions;
         } else {
             return Buffer.alloc(0); // 不支持的 GIF
         }
