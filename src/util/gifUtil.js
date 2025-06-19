@@ -223,19 +223,17 @@ async function overlayAvatarOnGif(inputAvatar, delay, selectedSource,rotate) {
 /**
  * 文生图
  */
-const textOnGif = async  (textList, delay, selectedSource,rotate) => {
+const textOnGif = async  (textList, delay, selectedSource,rotate,gifPositions) => {
     let resultBuffer;
-    // const GIF_PATH = path.join("public", "static", selectedSource);
     const tmpDir = fs.mkdtempSync(path.join("temp", "gif-text-"));
     const gifPath = path.join(tmpDir, "input.gif");
     const outputGif = path.join(tmpDir, "output.gif");
 
     try {
-        // const gifBuffer = await fsPromise.readFile(GIF_PATH);
         const gifResponse = await $https(selectedSource,"get",{},3,{});
         fs.writeFileSync(gifPath, gifResponse.data);
         // 获取对应 GIF 的头像位置数组
-        let positions = gif8Positions;
+        let positions = gifPositions;
         // 使用 ffmpeg 提取 GIF 每一帧为 PNG
         const framePattern = path.join(tmpDir, "frame_%03d.png");
         await new Promise((resolve, reject) => {
