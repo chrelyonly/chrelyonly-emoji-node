@@ -28,9 +28,16 @@ const myRouter = require("./src/web/router/myRoutes");
 
 // 配置 JSON 请求体解析，最大上传大小限制为 10MB（适用于 base64 图片）
 app.use(express.json({ limit: '10mb' }));
+// 或加上 history fallback（推荐）
+app.use(
+    '/emoji-app',
+    require('connect-history-api-fallback')({
+        index: '/index.html'
+    })
+);
 // 由于vue 单页面应用问题,刷新会路由404, 使用nginx处理了
 app.use('/emoji-app', express.static(path.join(__dirname, 'public')));
-app.use('/emoji-app', myRouter);
+app.use('/emoji-app-api', myRouter);
 
 /**
  * API 接口：调试/预览某个 GIF 分帧图像和头像位置
