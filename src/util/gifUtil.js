@@ -60,35 +60,22 @@ async function createCircularAvatar(avatarBuffer, width, outputPath) {
  * @param {string} outputPath - 输出路径
  */
 async function createRectangularAvatar(text, width, height, outputPath) {
-    const maxCharsPerLine = Math.floor(width / 30); // 估算每行字符数
-    const lines = [];
-
-    for (let i = 0; i < text.length; i += maxCharsPerLine) {
-        lines.push(text.slice(i, i + maxCharsPerLine));
-    }
-
-    const fontSize = Math.floor(height / (lines.length + 1));
-    const lineHeight = fontSize * 1.2;
-    const startY = (height - lineHeight * lines.length) / 2 + fontSize / 2;
-
-    const svgText = lines.map((line, i) => {
-        const y = startY + i * lineHeight;
-        return `<text x="50%" y="${y}" text-anchor="middle" dominant-baseline="middle">${line}</text>`;
-    }).join("\n");
+    const fontSize = Math.floor(Math.min(width, height) / 6); // 字体大小相对于图像大小
 
     const svg = `
     <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
         <style>
             text {
-                fill: #ffffff;
+                fill: white;
                 font-size: ${fontSize}px;
                 font-family: sans-serif;
                 font-weight: bold;
             }
         </style>
-        <rect width="100%" height="100%" fill="transparent"/>
-        ${svgText}
-    </svg>`;
+        <rect width="100%" height="100%" fill="black"/>
+        <text x="50%" y="50%" text-anchor="middle" dominant-baseline="middle">${text}</text>
+    </svg>
+    `;
 
     await sharp(Buffer.from(svg))
         .png()
