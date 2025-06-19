@@ -25,6 +25,8 @@ const {gif6Positions} = require("./src/positions/gif6");
 const {gif7Positions} = require("./src/positions/gif7");
 const {gif8Positions} = require("./src/positions/gif8");
 const myRouter = require("./src/web/router/myRoutes");
+const fs = require("fs");
+const {checkGif} = require("./src/util/gifUtil");
 
 // 配置 JSON 请求体解析，最大上传大小限制为 10MB（适用于 base64 图片）
 app.use(express.json({ limit: '10mb' }));
@@ -92,6 +94,29 @@ app.post('/emoji-app/emoji/images', async (req, res) => {
             count: images.length,
             images,
             avatarPositions: positions,
+        });
+    } catch (error) {
+        console.error('Error reading images:', error);
+        res.status(500).json({ success: false, message: 'Failed to load images.' });
+    }
+});
+/**
+ * API调试接口
+ * 上传一张gif返回
+ * 响应:
+ *  - 所有帧图像（base64 格式）
+ *  - 可用于前端调试头像位置叠加效果
+ */
+app.post('/emoji-app/emoji/gif', async (req, res) => {
+    const { base64 } = req.body;
+    try {
+        let images = await checkGif(base64)
+        // 获取对应 GIF 的头像位置数组
+        res.json({
+            success: true,
+            count: images?.length,
+            images,
+            avatarPositions: gif8Positions,
         });
     } catch (error) {
         console.error('Error reading images:', error);

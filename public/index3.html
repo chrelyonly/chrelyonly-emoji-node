@@ -47,6 +47,17 @@
             <h2 style="text-align: center;">简易抓 GIF 坐标的功能</h2>
             {{avatarPositions}}
         </template>
+        <el-upload
+                drag
+                accept="image/*"
+                :auto-upload="false"
+                :on-change="handleChange"
+        >
+            <el-icon style="font-size: 60px; color: #409EFF;">
+                <UploadFilled />
+            </el-icon>
+            <div class="el-upload__text">拖拽或点击上传头像</div>
+        </el-upload>
         <!-- 新增按钮和图片展示 -->
         <div style="margin-top: 40px;">
             <el-divider content-position="center">GIF工具</el-divider>
@@ -109,6 +120,8 @@
                                                 <el-tag>y: {{items2[1]}}</el-tag>
                                                 <el-tag>width: {{items2[2]}}</el-tag>
                                                 <el-tag>height: {{items2[3]}}</el-tag>
+                                                <el-tag>第几段话: {{items2[4]}}</el-tag>
+                                                <el-tag>下标: {{items2[5]}}</el-tag>
                                                 <div>
                                                     <el-input-number
                                                             v-model="items2[0]"
@@ -127,6 +140,16 @@
                                                 <div>
                                                     <el-input-number
                                                             v-model="items2[3]"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <el-input-number
+                                                            v-model="items2[4]"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <el-input-number
+                                                            v-model="items2[5]"
                                                     />
                                                 </div>
                                             </div>
@@ -188,6 +211,29 @@
                     });
             };
 
+            // 文件上传
+            const originalImage = ref("");
+            const handleChange = (uploadFile) => {
+                const file = uploadFile.raw;
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    originalImage.value = e.target.result;
+                //     将文件传入给后端
+                    axios.post('/emoji-app/emoji/gif', {
+                        base64: originalImage.value,
+                    }).then(res => {
+                        if (res.data.success) {
+                            framesList.value = res.data.images;
+                            avatarPositions.value = res.data.avatarPositions;
+                        } else {
+                            ElementPlus.ElMessage.warning('未获取到图片');
+                        }
+                    }).catch(() => {
+                        ElementPlus.ElMessage.error('生成失败');
+                    })
+                };
+                reader.readAsDataURL(file);
+            };
             return {
                 framesList,
                 avatarPositions,
@@ -195,7 +241,8 @@
                 fetchHistory,
                 copyAvatarPositions,
                 selectedSource,
-                avatarWidth
+                avatarWidth,
+                handleChange
 
             };
         }

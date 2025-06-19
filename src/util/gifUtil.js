@@ -357,8 +357,61 @@ const textOnGif = async  (textList, delay, selectedSource,rotate,gifPositions) =
     return resultBuffer;
 }
 
+
+const checkGif = async (base64) => {
+    const folderPath = fs.mkdtempSync(path.join("temp", "gif-text-"));
+    const gifPath = path.join(folderPath, "input.gif");
+    const limit = pLimit(4); // 限制并发数为4
+    const images = [];
+
+    try {
+        // 写入 GIF 文件
+        const base64Data = base64.replace(/^data:image\/\w+;base64,/, "");
+        const buffer = Buffer.from(base64Data, 'base64');
+        fs.writeFileSync(gifPath, buffer);
+
+        // 使用 ffmpeg 提取每一帧
+        const framePattern = path.join(folderPath, "frame_%03d.png");
+        await new Promise((resolve, reject) => {
+            ffmpeg(gifPath)
+                .output(framePattern)
+                .on("end", resolve)
+                .on("error", reject)
+                .run();
+        });
+
+        // 遍历文件夹中所有帧图像
+        const files = fs.readdirSync(folderPath).filter(file => {
+            const ext = path.extname(file).toLowerCase();
+            return ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp'].includes(ext);
+        });
+
+        // 并发处理帧图像
+        files.map(file =>{
+                const ext = path.extname(file).toLowerCase();
+                const filePath = path.join(folderPath, file);
+                const fileData = fs.readFileSync(filePath);
+                const base64Image = `data:image/${ext.slice(1)};base64,${fileData.toString('base64')}`;
+                images.push({
+                    filename: file,
+                    data: base64Image
+                });
+            }
+        );
+        return images;
+
+    } catch (e) {
+        console.error("系统内异常", e);
+    } finally {
+        // 清理临时目录
+        fs.rmSync(folderPath, { recursive: true, force: true });
+    }
+}
+
+
 // 导出主函数
 module.exports = {
     overlayAvatarOnGif,
-    textOnGif
+    textOnGif,
+    checkGif
 };
