@@ -83,13 +83,13 @@ app.post('/emoji-app/emoji/textToGif', async (req, res) => {
         let { textList, delay, selectedSource,rotate,gifPositions} = req.body;
 
         // 参数校验
-        if (!textList || !delay || !selectedSource || (!rotate && rotate !== 0) || gifPositions.length < 1) {
+        if (!textList || !delay || !selectedSource || (!rotate && rotate !== 0) || !gifPositions) {
             return res.json(R.fail("操作异常,参数传入不对"));
         }
         if (rotate < 0 || rotate > 360) {
             return res.json(R.fail("旋转角度错误"));
         }
-        gifPositions = JSON.parse(textList);
+        gifPositions = JSON.parse(gifPositions);
         // 调用主逻辑处理
         const resultBuffer = await textOnGif(textList, delay, selectedSource,rotate,gifPositions);
 
