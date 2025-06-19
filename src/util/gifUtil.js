@@ -367,7 +367,7 @@ const checkGif = async (base64) => {
         // 写入 GIF 文件
         const base64Data = base64.replace(/^data:image\/\w+;base64,/, "");
         const buffer = Buffer.from(base64Data, 'base64');
-        fs.writeFileSync(gifPath, buffer);
+        await fs.promises.writeFile(gifPath, buffer);
 
         // 使用 ffmpeg 提取每一帧
         const framePattern = path.join(folderPath, "frame_%03d.png");
@@ -379,24 +379,26 @@ const checkGif = async (base64) => {
                 .run();
         });
 
-        // 遍历文件夹中所有帧图像
-        const files = fs.readdirSync(folderPath).filter(file => {
+        // 异步读取图像列表并并发读取内容
+        const files = (await fs.promises.readdir(folderPath))
+            .filter(file => {
+                const ext = path.extname(file).toLowerCase();
+                return ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp'].includes(ext);
+            })
+            .sort();
+
+        const imagePromises = files.map(async file => {
             const ext = path.extname(file).toLowerCase();
-            return ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp'].includes(ext);
+            const filePath = path.join(folderPath, file);
+            const fileData = await fs.promises.readFile(filePath);
+            return {
+                filename: file,
+                data: `data:image/${ext.slice(1)};base64,${fileData.toString('base64')}`
+            };
         });
 
-        // 并发处理帧图像
-        files.map(file =>{
-                const ext = path.extname(file).toLowerCase();
-                const filePath = path.join(folderPath, file);
-                const fileData = fs.readFileSync(filePath);
-                const base64Image = `data:image/${ext.slice(1)};base64,${fileData.toString('base64')}`;
-                images.push({
-                    filename: file,
-                    data: base64Image
-                });
-            }
-        );
+        const results = await Promise.all(imagePromises);
+        images.push(...results);
         return images;
 
     } catch (e) {
@@ -405,7 +407,7 @@ const checkGif = async (base64) => {
         // 清理临时目录
         fs.rmSync(folderPath, { recursive: true, force: true });
     }
-}
+};
 
 
 // 导出主函数
