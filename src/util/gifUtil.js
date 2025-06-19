@@ -82,7 +82,7 @@ async function createRectangularAvatar(text, width, height, outputPath) {
             text {
                 fill: #ffffff;
                 font-size: ${fontSize}px;
-                font-family: sans-serif;
+                font-family: DejaVu Sans;
                 font-weight: bold;
             }
         </style>
