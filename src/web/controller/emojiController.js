@@ -62,6 +62,9 @@ const textOnGifApi = async (req, res) => {
             return res.json(R.fail("不支持的类型"));
         }
 
+        // res.setHeader("Content-Type", "image/gif");
+        // res.setHeader("Content-Disposition", "inline; filename=output.gif");
+        // res.send(resultBuffer);
         // 转换为 base64 字符串响应
         const resultBase64 = resultBuffer.toString('base64');
         res.json(R.data(`data:image/gif;base64,${resultBase64}`));
