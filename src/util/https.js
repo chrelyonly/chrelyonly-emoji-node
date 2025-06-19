@@ -1,4 +1,6 @@
-const request = require('../config/axiosConfig.js')
+
+// import {request} from "../config/axiosConfig";
+const {request} = require("../config/axiosConfig")
 /**
  * 用法
  * 自定义全局通用方法传入

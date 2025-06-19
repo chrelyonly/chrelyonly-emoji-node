@@ -1,4 +1,4 @@
-import axios from 'axios';
+const axios = require("axios")
 
 /**
  * 创建一个新的 Axios 实例
@@ -20,7 +20,7 @@ import axios from 'axios';
  * - 响应拦截器会检查响应状态码，非 200 状态码将被视为错误，并打印警告信息和错误详情，
  *   同时处理响应阶段的错误。
  */
-const createAxiosInstance = (config = {}) => {
+const request = (config = {}) => {
     const defaultConfig = {
         timeout: 30000, // 请求超时时间
         validateStatus: status => status >= 200 && status <= 500, // 默认的状态码验证
@@ -98,7 +98,9 @@ const createAxiosInstance = (config = {}) => {
     return instance;
 };
 
-// 导出默认实例
-export default {
-    createAxiosInstance: createAxiosInstance()
-}
+
+
+// 导出主函数
+module.exports = {
+    request: request()
+};

@@ -232,16 +232,10 @@ const textOnGif = async  (textList, delay, selectedSource,rotate) => {
 
     try {
         // const gifBuffer = await fsPromise.readFile(GIF_PATH);
-        const gifBuffer = await $https(selectedSource,"get",{},3,{});
-        fs.writeFileSync(gifPath, gifBuffer);
+        const gifResponse = await $https(selectedSource,"get",{},3,{});
+        fs.writeFileSync(gifPath, gifResponse.data);
         // 获取对应 GIF 的头像位置数组
-        let positions = "";
-        if (selectedSource === "8.gif") {
-            positions = gif8Positions;
-        } else {
-            return Buffer.alloc(0); // 不支持的 GIF
-        }
-
+        let positions = gif8Positions;
         // 使用 ffmpeg 提取 GIF 每一帧为 PNG
         const framePattern = path.join(tmpDir, "frame_%03d.png");
         await new Promise((resolve, reject) => {

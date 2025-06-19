@@ -83,8 +83,8 @@ app.post('/emoji-app/emoji/textToGif', async (req, res) => {
         const { textList, delay, selectedSource,rotate} = req.body;
 
         // 参数校验
-        if (!textList || !delay || !selectedSource || !rotate) {
-            return res.json(R.fail("操作异常"));
+        if (!textList || !delay || !selectedSource || (!rotate && rotate !== 0)) {
+            return res.json(R.fail("操作异常,参数传入不对"));
         }
         if (rotate < 0 || rotate > 360) {
             return res.json(R.fail("旋转角度错误"));
@@ -96,12 +96,12 @@ app.post('/emoji-app/emoji/textToGif', async (req, res) => {
         if (!resultBuffer || resultBuffer.length < 1) {
             return res.json(R.fail("不支持的类型"));
         }
-        res.setHeader("Content-Type", "image/gif");
-        res.setHeader("Content-Disposition", "inline; filename=output.gif");
-        res.send(resultBuffer);
+        // res.setHeader("Content-Type", "image/gif");
+        // res.setHeader("Content-Disposition", "inline; filename=output.gif");
+        // res.send(resultBuffer);
         // 转换为 base64 字符串响应
-        // const resultBase64 = resultBuffer.toString('base64');
-        // res.json(R.data(`data:image/gif;base64,${resultBase64}`));
+        const resultBase64 = resultBuffer.toString('base64');
+        res.json(R.data(`data:image/gif;base64,${resultBase64}`));
 
     } catch (error) {
         console.error('处理失败:', error);
