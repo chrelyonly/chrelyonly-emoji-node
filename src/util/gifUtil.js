@@ -361,7 +361,6 @@ const textOnGif = async  (textList, delay, selectedSource,rotate,gifPositions) =
 const checkGif = async (base64) => {
     const folderPath = fs.mkdtempSync(path.join("temp", "gif-text-"));
     const gifPath = path.join(folderPath, "input.gif");
-    const limit = pLimit(4); // 限制并发数为4
     const images = [];
 
     try {
