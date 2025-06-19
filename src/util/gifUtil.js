@@ -233,7 +233,7 @@ const textOnGif = async  (textList, delay, selectedSource,rotate,gifPositions) =
         const gifResponse = await $https(selectedSource,"get",{},3,{});
         fs.writeFileSync(gifPath, gifResponse.data);
         // 获取对应 GIF 的头像位置数组
-        let positions = gif8Positions;
+        let positions = gifPositions;
         // 使用 ffmpeg 提取 GIF 每一帧为 PNG
         const framePattern = path.join(tmpDir, "frame_%03d.png");
         await new Promise((resolve, reject) => {

@@ -1,0 +1,78 @@
+const { overlayAvatarOnGif, textOnGif } = require('../../util/gifUtil');
+
+/**
+ * 上传头像制作gif
+ * @param req
+ * @param res
+ * @returns {Promise<*>}
+ */
+const uploadEmojiApi = async (req, res) => {
+    try {
+        const { base64, delay, selectedSource, rotate } = req.body;
+
+        // 参数校验
+        if (!base64 || !delay || !selectedSource || !rotate) {
+            return res.json(R.fail("操作异常"));
+        }
+        if (rotate < 0 || rotate > 360) {
+            return res.json(R.fail("旋转角度错误"));
+        }
+
+        // 调用主逻辑处理
+        const resultBuffer = await overlayAvatarOnGif(base64, delay, selectedSource, rotate);
+
+        if (!resultBuffer || resultBuffer.length < 1) {
+            return res.json(R.fail("不支持的类型"));
+        }
+
+        // 转换为 base64 字符串响应
+        const resultBase64 = resultBuffer.toString('base64');
+        res.json(R.data(`data:image/gif;base64,${resultBase64}`));
+
+    } catch (error) {
+        console.error('处理失败:', error);
+        res.status(500).json({ success: false, message: '服务器内部错误' });
+    }
+};
+
+/**
+ * 上传文字生成gif
+ * @param req
+ * @param res
+ * @returns {Promise<*>}
+ */
+const textOnGifApi = async (req, res) => {
+    try {
+        let { textList, delay, selectedSource, rotate, gifPositions } = req.body;
+
+        // 参数校验
+        if (!textList || !delay || !selectedSource || (!rotate && rotate !== 0) || !gifPositions) {
+            return res.json(R.fail("操作异常,参数传入不对"));
+        }
+        if (rotate < 0 || rotate > 360) {
+            return res.json(R.fail("旋转角度错误"));
+        }
+
+        gifPositions = JSON.parse(gifPositions);
+
+        // 调用主逻辑处理
+        const resultBuffer = await textOnGif(textList, delay, selectedSource, rotate, gifPositions);
+
+        if (!resultBuffer || resultBuffer.length < 1) {
+            return res.json(R.fail("不支持的类型"));
+        }
+
+        // 转换为 base64 字符串响应
+        const resultBase64 = resultBuffer.toString('base64');
+        res.json(R.data(`data:image/gif;base64,${resultBase64}`));
+
+    } catch (error) {
+        console.error('处理失败:', error);
+        res.status(500).json({ success: false, message: '服务器内部错误' });
+    }
+};
+
+module.exports = {
+    uploadEmojiApi,
+    textOnGifApi
+};

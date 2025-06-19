@@ -5,7 +5,6 @@
  * 创建时间: 2025年6月7日
  * 描述: 提供头像叠加 GIF 的 Web API 接口和调试预览接口。
  */
-
 const express = require('express');
 const app = express();
 const PORT = 3000;
@@ -16,105 +15,21 @@ require("./src/config/dateConfig.js");
 require("./src/util/https.js");
 
 const path = require('path');
-const fs = require('fs/promises');
 const fs2 = require('fs'); // 用于同步读取测试图片
 
 const { gif2Positions } = require("./src/positions/gif2");
 const { gif3Positions } = require("./src/positions/gif3");
-const { overlayAvatarOnGif, textOnGif} = require("./src/util/gifUtil");
 const {gif4Positions} = require("./src/positions/gif4");
 const {gif5Positions} = require("./src/positions/gif5");
 const {gif6Positions} = require("./src/positions/gif6");
 const {gif7Positions} = require("./src/positions/gif7");
 const {gif8Positions} = require("./src/positions/gif8");
-
-// 静态资源映射（如 HTML/JS/CSS 等）
-// 可访问路径: http://localhost:3000/emoji-app/xxx
-app.use('/emoji-app', express.static(path.join(__dirname, 'public')));
+const myRouter = require("./src/web/router/myRoutes");
 
 // 配置 JSON 请求体解析，最大上传大小限制为 10MB（适用于 base64 图片）
 app.use(express.json({ limit: '10mb' }));
-
-/**
- * API 接口：上传 base64 头像，合成带头像的 GIF
- * POST /emoji-app/emoji/uploadEmoji
- * 请求参数:
- *  - base64: base64 编码头像
- *  - delay: 帧间隔
- *  - selectedSource: 使用的 GIF 文件名，例如 "2.gif"
- * 响应:
- *  - 返回 base64 编码的新 GIF（带 data:image/gif;base64, 前缀）
- */
-app.post('/emoji-app/emoji/uploadEmoji', async (req, res) => {
-    try {
-        const { base64, delay, selectedSource,rotate} = req.body;
-
-        // 参数校验
-        if (!base64 || !delay || !selectedSource || !rotate) {
-            return res.json(R.fail("操作异常"));
-        }
-        if (rotate < 0 || rotate > 360) {
-            return res.json(R.fail("旋转角度错误"));
-        }
-
-        // 调用主逻辑处理
-        const resultBuffer = await overlayAvatarOnGif(base64, delay, selectedSource,rotate);
-
-        if (!resultBuffer || resultBuffer.length < 1) {
-            return res.json(R.fail("不支持的类型"));
-        }
-
-        // 转换为 base64 字符串响应
-        const resultBase64 = resultBuffer.toString('base64');
-        res.json(R.data(`data:image/gif;base64,${resultBase64}`));
-
-    } catch (error) {
-        console.error('处理失败:', error);
-        res.status(500).json({ success: false, message: '服务器内部错误' });
-    }
-});
-
-
-/**
- * 文字合成
- */
-app.post('/emoji-app/emoji/textToGif', async (req, res) => {
-    try {
-        let { textList, delay, selectedSource,rotate,gifPositions} = req.body;
-
-        // 参数校验
-        if (!textList || !delay || !selectedSource || (!rotate && rotate !== 0) || !gifPositions) {
-            return res.json(R.fail("操作异常,参数传入不对"));
-        }
-        if (rotate < 0 || rotate > 360) {
-            return res.json(R.fail("旋转角度错误"));
-        }
-        gifPositions = JSON.parse(gifPositions);
-        // 调用主逻辑处理
-        const resultBuffer = await textOnGif(textList, delay, selectedSource,rotate,gifPositions);
-
-        if (!resultBuffer || resultBuffer.length < 1) {
-            return res.json(R.fail("不支持的类型"));
-        }
-        // res.setHeader("Content-Type", "image/gif");
-        // res.setHeader("Content-Disposition", "inline; filename=output.gif");
-        // res.send(resultBuffer);
-        // 转换为 base64 字符串响应
-        const resultBase64 = resultBuffer.toString('base64');
-        res.json(R.data(`data:image/gif;base64,${resultBase64}`));
-
-    } catch (error) {
-        console.error('处理失败:', error);
-        res.status(500).json({ success: false, message: '服务器内部错误' });
-    }
-});
-
-
-
-
-
-
-
+app.use('/emoji-app', express.static(path.join(__dirname, 'public')));
+app.use('/emoji-app', myRouter);
 
 /**
  * API 接口：调试/预览某个 GIF 分帧图像和头像位置
