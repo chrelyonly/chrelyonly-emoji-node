@@ -59,23 +59,44 @@ async function createCircularAvatar(avatarBuffer, width, outputPath) {
  * @param {number} height - 输出头像的尺寸
  * @param {string} outputPath - 输出路径
  */
+
+/**
+ * 创建矩形文本并保存为 PNG 格式
+ * @param {string} text - 原始文字内容
+ * @param {number} width - 输出头像的尺寸
+ * @param {number} height - 输出头像的尺寸
+ * @param {string} outputPath - 输出路径
+ */
 async function createRectangularAvatar(text, width, height, outputPath) {
-    const fontSize = Math.floor(Math.min(width, height) / 6); // 字体大小相对于图像大小
+    const maxCharsPerLine = 10; // 估算每行字符数
+    const lines = [];
+
+    for (let i = 0; i < text.length; i += maxCharsPerLine) {
+        lines.push(text.slice(i, i + maxCharsPerLine));
+    }
+
+    const fontSize = Math.floor(height / (lines.length + 1));
+    const lineHeight = fontSize * 1.2;
+    const startY = (height - lineHeight * lines.length) / 2 + fontSize / 2;
+
+    const svgText = lines.map((line, i) => {
+        const y = startY + i * lineHeight;
+        return `<text x="50%" y="${y}" text-anchor="middle" dominant-baseline="middle">${line}</text>`;
+    }).join("\n");
 
     const svg = `
     <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
         <style>
             text {
-                fill: white;
+                fill: #ffffff;
                 font-size: ${fontSize}px;
                 font-family: sans-serif;
                 font-weight: bold;
             }
         </style>
-        <rect width="100%" height="100%" fill="black"/>
-        <text x="50%" y="50%" text-anchor="middle" dominant-baseline="middle">${text}</text>
-    </svg>
-    `;
+        <rect width="100%" height="100%" fill="transparent"/>
+        ${svgText}
+    </svg>`;
 
     await sharp(Buffer.from(svg))
         .png()
