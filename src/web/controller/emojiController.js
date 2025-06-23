@@ -44,7 +44,7 @@ const uploadEmojiApi = async (req, res) => {
 const textOnGifApi = async (req, res) => {
     try {
         let { textList, delay, selectedSource, rotate, gifPositions,fontSize,scaling } = req.body;
-        selectedSource = "https://nginx-3.frp.chrelyonly.cn/minio-api/emoji/upload/20250619/e55357cd5c384e891dd003e546e5d0ee.gif"
+        // selectedSource = "https://nginx-3.frp.chrelyonly.cn/minio-api/emoji/upload/20250619/e55357cd5c384e891dd003e546e5d0ee.gif"
         // 参数校验
         if (!textList || !delay || !selectedSource || (!rotate && rotate !== 0) || !gifPositions || !fontSize || !scaling) {
             return res.json(R.fail("操作异常,参数传入不对"));
