@@ -66,12 +66,13 @@ async function createCircularAvatar(avatarBuffer, width, outputPath) {
  * @param {number} width - 输出头像的尺寸
  * @param {number} height - 输出头像的尺寸
  * @param {string} outputPath - 输出路径
+ * @param fontSize 字体大小
  */
-async function createRectangularAvatar(text, width, height, outputPath) {
+async function createRectangularAvatar(text, width, height, outputPath,fontSize) {
     const maxCharsPerLine = 10;
 
     // 先按 \n 分割用户明确的换行
-    const manualLines = text.split('\n');
+    const manualLines = text.split('\\n');
 
     // 然后再对每行按长度拆分
     const lines = [];
@@ -80,8 +81,6 @@ async function createRectangularAvatar(text, width, height, outputPath) {
             lines.push(segment.slice(i, i + maxCharsPerLine));
         }
     }
-
-    const fontSize = Math.floor(height / (lines.length + 1));
     const lineHeight = fontSize * 1.2;
     const startY = (height - lineHeight * lines.length) / 2 + fontSize / 2;
 
@@ -235,7 +234,7 @@ async function overlayAvatarOnGif(inputAvatar, delay, selectedSource,rotate) {
 /**
  * 文生图
  */
-const textOnGif = async  (textList, delay, selectedSource,rotate,gifPositions) => {
+const textOnGif = async  (textList, delay, selectedSource,rotate,gifPositions,fontSize,scaling) => {
     let resultBuffer;
     const tmpDir = fs.mkdtempSync(path.join("temp", "gif-text-"));
     const gifPath = path.join(tmpDir, "input.gif");
@@ -277,7 +276,7 @@ const textOnGif = async  (textList, delay, selectedSource,rotate,gifPositions) =
                             continue; // ⚠️ 注意：这必须在 async limit 函数中，return 提前终止
                         }
                         const textPath = path.join(tmpDir, `text_${key}.png`);
-                        await createRectangularAvatar(textListElement, item2[2],item2[3], textPath);
+                        await createRectangularAvatar(textListElement, item2[2],item2[3], textPath,fontSize);
                         textCache.set(key, textPath);
                     }
                 }
@@ -335,6 +334,7 @@ const textOnGif = async  (textList, delay, selectedSource,rotate,gifPositions) =
 
         const overlayPattern = path.join(tmpDir, "overlay_%03d.png");
 
+
         // 使用 palettegen 和 paletteuse 保持透明度合成新的 GIF
         await new Promise((resolve, reject) => {
             ffmpeg()
@@ -349,7 +349,16 @@ const textOnGif = async  (textList, delay, selectedSource,rotate,gifPositions) =
                 .on("error", reject)
                 .run();
         });
-
+        // await new Promise((resolve, reject) => {
+        //     ffmpeg()
+        //         .input(outputGif)
+        //         .outputOptions(["-y"])
+        //         .videoFilters(`scale=iw*${scaling}/100:ih*${scaling}`)
+        //         .output(finalGifPath)
+        //         .on("end", resolve)
+        //         .on("error", reject)
+        //         .run();
+        // });
         resultBuffer = fs.readFileSync(outputGif);
     } catch (e) {
         console.error("系统内异常", e);

@@ -43,10 +43,10 @@ const uploadEmojiApi = async (req, res) => {
  */
 const textOnGifApi = async (req, res) => {
     try {
-        let { textList, delay, selectedSource, rotate, gifPositions } = req.body;
-
+        let { textList, delay, selectedSource, rotate, gifPositions,fontSize,scaling } = req.body;
+        selectedSource = "https://nginx-3.frp.chrelyonly.cn/minio-api/emoji/upload/20250619/e55357cd5c384e891dd003e546e5d0ee.gif"
         // 参数校验
-        if (!textList || !delay || !selectedSource || (!rotate && rotate !== 0) || !gifPositions) {
+        if (!textList || !delay || !selectedSource || (!rotate && rotate !== 0) || !gifPositions || !fontSize || !scaling) {
             return res.json(R.fail("操作异常,参数传入不对"));
         }
         if (rotate < 0 || rotate > 360) {
@@ -56,7 +56,9 @@ const textOnGifApi = async (req, res) => {
         gifPositions = JSON.parse(gifPositions);
 
         // 调用主逻辑处理
-        const resultBuffer = await textOnGif(textList, delay, selectedSource, rotate, gifPositions);
+        const resultBuffer = await textOnGif(textList, delay,
+            selectedSource, rotate,
+            gifPositions,fontSize,scaling);
 
         if (!resultBuffer || resultBuffer.length < 1) {
             return res.json(R.fail("不支持的类型"));
