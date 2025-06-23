@@ -68,11 +68,17 @@ async function createCircularAvatar(avatarBuffer, width, outputPath) {
  * @param {string} outputPath - 输出路径
  */
 async function createRectangularAvatar(text, width, height, outputPath) {
-    const maxCharsPerLine = 10; // 估算每行字符数
-    const lines = [];
+    const maxCharsPerLine = 10;
 
-    for (let i = 0; i < text.length; i += maxCharsPerLine) {
-        lines.push(text.slice(i, i + maxCharsPerLine));
+    // 先按 \n 分割用户明确的换行
+    const manualLines = text.split('\n');
+
+    // 然后再对每行按长度拆分
+    const lines = [];
+    for (const segment of manualLines) {
+        for (let i = 0; i < segment.length; i += maxCharsPerLine) {
+            lines.push(segment.slice(i, i + maxCharsPerLine));
+        }
     }
 
     const fontSize = Math.floor(height / (lines.length + 1));
@@ -98,9 +104,7 @@ async function createRectangularAvatar(text, width, height, outputPath) {
         ${svgText}
     </svg>`;
 
-    await sharp(Buffer.from(svg))
-        .png()
-        .toFile(outputPath);
+    await sharp(Buffer.from(svg)).png().toFile(outputPath);
 }
 
 /**
