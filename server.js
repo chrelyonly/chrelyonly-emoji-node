@@ -30,7 +30,8 @@ const {checkGif} = require("./src/util/gifUtil");
 const {defaultPositions} = require("./src/positions/defaultPositions");
 
 // 配置 JSON 请求体解析，最大上传大小限制为 10MB（适用于 base64 图片）
-app.use(express.json({ limit: '10mb' }));
+app.use(express.json({ limit: '20mb' }));
+app.use(express.urlencoded({ extended: true, limit: '20mb' }));
 // 或加上 history fallback（推荐）
 app.use(
     '/emoji-app',
