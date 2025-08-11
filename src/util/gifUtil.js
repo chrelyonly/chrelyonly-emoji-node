@@ -34,6 +34,9 @@ const {gif5Positions} = require("../positions/gif5");
 const {gif6Positions} = require("../positions/gif6");
 const {gif7Positions} = require("../positions/gif7");
 const {gif8Positions} = require("../positions/gif8");
+const {gif10Positions} = require("../positions/gif10");
+const {gif11Positions} = require("../positions/gif11");
+const {gif12Positions} = require("../positions/gif12");
 
 /**
  * 创建圆形头像并保存为 PNG 格式
@@ -107,6 +110,27 @@ async function createRectangularAvatar(text, width, height, outputPath,fontSize)
 }
 
 /**
+ * 判断是否多图数组
+ * @param positions
+ * @returns {*[]}
+ */
+function extractAllSizes(positions) {
+    const sizes = [];
+    for (const pos of positions) {
+        if (Array.isArray(pos[0])) {
+            // 多图模式：pos 是 [ [x, y, size], [x, y, size], ... ]
+            for (const [ , , size ] of pos) {
+                sizes.push(size);
+            }
+        } else {
+            // 单图模式：pos 是 [x, y, size]
+            const [ , , size ] = pos;
+            sizes.push(size);
+        }
+    }
+    return sizes;
+}
+/**
  * 将圆形头像叠加到 GIF 的每一帧指定位置上，并生成新 GIF
  * @param {string} inputAvatar - base64 格式头像字符串
  * @param {number} delay - 帧率（帧之间的间隔）
@@ -144,6 +168,12 @@ async function overlayAvatarOnGif(inputAvatar, delay, selectedSource,rotate) {
             positions = gif6Positions;
         } else if (selectedSource === "7.gif") {
             positions = gif7Positions;
+        } else if (selectedSource === "10.gif") {
+            positions = gif10Positions;
+        } else if (selectedSource === "11.gif") {
+            positions = gif11Positions;
+        } else if (selectedSource === "12.gif") {
+            positions = gif12Positions;
         } else {
             return Buffer.alloc(0); // 不支持的 GIF
         }
@@ -152,6 +182,10 @@ async function overlayAvatarOnGif(inputAvatar, delay, selectedSource,rotate) {
         const framePattern = path.join(tmpDir, "frame_%03d.png");
         await new Promise((resolve, reject) => {
             ffmpeg(gifPath)
+                .outputOptions([
+                    '-vsync 0',   // 关闭帧率同步，保持帧数不变
+                    '-ignore_loop 0' // 保持GIF动画循环设置
+                ])
                 .output(framePattern)
                 .on("end", resolve)
                 .on("error", reject)
@@ -160,7 +194,10 @@ async function overlayAvatarOnGif(inputAvatar, delay, selectedSource,rotate) {
 
         // 为不同尺寸缓存裁剪好的圆形头像
         const avatarCache = new Map();
-        for (const [_, __, size] of positions) {
+
+
+        const sizes = extractAllSizes(positions);
+        for (const size of sizes) {
             if (!avatarCache.has(size)) {
                 const avatarPath = path.join(tmpDir, `avatar_${size}.png`);
                 await createCircularAvatar(avatarBuffer, size, avatarPath);
@@ -168,37 +205,112 @@ async function overlayAvatarOnGif(inputAvatar, delay, selectedSource,rotate) {
             }
         }
 
+
+
+        // for (const [_, __, size] of positions) {
+        //     if (!avatarCache.has(size)) {
+        //         const avatarPath = path.join(tmpDir, `avatar_${size}.png`);
+        //         await createCircularAvatar(avatarBuffer, size, avatarPath);
+        //         avatarCache.set(size, avatarPath);
+        //     }
+        // }
+
         // 限制并发数为4，处理每一帧的头像叠加
         const limit = pLimit(4);
-        const frameOverlayPromises = positions.map(([x, y, size], i) =>
+        const frameOverlayPromises = positions.map((item, i) =>
             limit(async () => {
-                const frameInput = path.join(
-                    tmpDir,
-                    `frame_${String(i + 1).padStart(3, "0")}.png`
-                );
-                const frameOutput = path.join(
-                    tmpDir,
-                    `overlay_${String(i + 1).padStart(3, "0")}.png`
-                );
-                const avatarPath = avatarCache.get(size);
-                // 无意义的操作就简化
-                if (rotate === 0|| rotate === 360){
-                    await sharp(frameInput)
-                        .composite([{ input: avatarPath, left: x, top: y }])
-                        .toFile(frameOutput);
-                }else{
-                    //这里必须拆解步骤,先合成图,在旋转,否则需要重新找点位
-                    const avatarComposite = await sharp(frameInput)
-                        .composite([{ input: avatarPath, left: x, top: y }])
-                        .toBuffer();
+                // 判断多图
+                if (item && item.length > 1 && item[0] instanceof Array){
+                    const frameInput = path.join(
+                        tmpDir,
+                        `frame_${String(i + 1).padStart(3, "0")}.png`
+                    );
+                    const frameOutput = path.join(
+                        tmpDir,
+                        `overlay_${String(i + 1).padStart(3, "0")}.png`
+                    );
+                    // 把所有头像放到一个 composite 数组中
+                    const composites = item.map(([x, y, size]) => ({
+                        input: avatarCache.get(size),
+                        left: x,
+                        top: y
+                    }));
+                    if (rotate === 0 || rotate === 360) {
+                        // 无旋转，直接一次性合成所有头像
+                        await sharp(frameInput)
+                            .composite(composites)
+                            .toFile(frameOutput);
+                    } else {
+                        // 先合成，再旋转
+                        const avatarComposite = await sharp(frameInput)
+                            .composite(composites)
+                            .toBuffer();
 
-                    await sharp(avatarComposite)
-                        .rotate(rotate, { background: { r: 0, g: 0, b: 0, alpha: 0 } })
-                        .toFile(frameOutput);
+                        await sharp(avatarComposite)
+                            .rotate(rotate, { background: { r: 0, g: 0, b: 0, alpha: 0 } })
+                            .toFile(frameOutput);
+                    }
+                }else{
+                    let [x, y, size] = item;
+                    const frameInput = path.join(
+                        tmpDir,
+                        `frame_${String(i + 1).padStart(3, "0")}.png`
+                    );
+                    const frameOutput = path.join(
+                        tmpDir,
+                        `overlay_${String(i + 1).padStart(3, "0")}.png`
+                    );
+                    const avatarPath = avatarCache.get(size);
+                    // 无意义的操作就简化
+                    if (rotate === 0|| rotate === 360){
+                        await sharp(frameInput)
+                            .composite([{ input: avatarPath, left: x, top: y }])
+                            .toFile(frameOutput);
+                    }else{
+                        //这里必须拆解步骤,先合成图,在旋转,否则需要重新找点位
+                        const avatarComposite = await sharp(frameInput)
+                            .composite([{ input: avatarPath, left: x, top: y }])
+                            .toBuffer();
+
+                        await sharp(avatarComposite)
+                            .rotate(rotate, { background: { r: 0, g: 0, b: 0, alpha: 0 } })
+                            .toFile(frameOutput);
+                    }
                 }
+
+
 
             })
         );
+        // const frameOverlayPromises = positions.map(([x, y, size], i) =>
+        //     limit(async () => {
+        //         const frameInput = path.join(
+        //             tmpDir,
+        //             `frame_${String(i + 1).padStart(3, "0")}.png`
+        //         );
+        //         const frameOutput = path.join(
+        //             tmpDir,
+        //             `overlay_${String(i + 1).padStart(3, "0")}.png`
+        //         );
+        //         const avatarPath = avatarCache.get(size);
+        //         // 无意义的操作就简化
+        //         if (rotate === 0|| rotate === 360){
+        //             await sharp(frameInput)
+        //                 .composite([{ input: avatarPath, left: x, top: y }])
+        //                 .toFile(frameOutput);
+        //         }else{
+        //             //这里必须拆解步骤,先合成图,在旋转,否则需要重新找点位
+        //             const avatarComposite = await sharp(frameInput)
+        //                 .composite([{ input: avatarPath, left: x, top: y }])
+        //                 .toBuffer();
+        //
+        //             await sharp(avatarComposite)
+        //                 .rotate(rotate, { background: { r: 0, g: 0, b: 0, alpha: 0 } })
+        //                 .toFile(frameOutput);
+        //         }
+        //
+        //     })
+        // );
 
         await Promise.all(frameOverlayPromises);
 
