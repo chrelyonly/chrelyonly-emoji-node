@@ -119,26 +119,34 @@ function extractAllSizes(positions) {
     for (const pos of positions) {
         if (Array.isArray(pos[0])) {
             // 多图模式：pos 是 [ [x, y, size], [x, y, size], ... ]
-            for (const [ , , size ] of pos) {
-                sizes.push(size);
+            for (const [ x,y, size ] of pos) {
+                sizes.push({
+                    size: size,
+                    x:x,
+                    y:y
+                });
             }
         } else {
             // 单图模式：pos 是 [x, y, size]
-            const [ , , size ] = pos;
-            sizes.push(size);
+            const [  x,y, size ] = pos;
+            sizes.push({
+                size: size,
+                x:x,
+                y:y
+            });
         }
     }
     return sizes;
 }
 /**
  * 将圆形头像叠加到 GIF 的每一帧指定位置上，并生成新 GIF
- * @param {string} inputAvatar - base64 格式头像字符串
+ * @param {string||[]} inputAvatarList - base64 格式头像字符串 单一或者数组
  * @param {number} delay - 帧率（帧之间的间隔）
  * @param {string} selectedSource - GIF 文件名 (例如: "2.gif", "3.gif")
  * @param rotate 旋转度数
  * @returns {Promise<Buffer>} - 返回生成的 GIF buffer
  */
-async function overlayAvatarOnGif(inputAvatar, delay, selectedSource,rotate) {
+async function overlayAvatarOnGif(inputAvatarList, delay, selectedSource,rotate) {
     let resultBuffer;
     const GIF_PATH = path.join("public", "static", selectedSource);
     const tmpDir = fs.mkdtempSync(path.join("temp", "gif-avatar-"));
@@ -147,10 +155,21 @@ async function overlayAvatarOnGif(inputAvatar, delay, selectedSource,rotate) {
 
     try {
         const gifBuffer = await fsPromise.readFile(GIF_PATH);
-        const avatarBuffer = Buffer.from(
-            inputAvatar.replace(/^data:image\/\w+;base64,/, ""),
-            "base64"
-        );
+        // 判断头像是否数组
+        let avatarBufferList = [];
+        if (inputAvatarList instanceof Array){
+            inputAvatarList.forEach(item=>{
+                avatarBufferList.push(Buffer.from(
+                    item.replace(/^data:image\/\w+;base64,/, ""),
+                    "base64"
+                ))
+            })
+        }else{
+            avatarBufferList.push(Buffer.from(
+                inputAvatarList.replace(/^data:image\/\w+;base64,/, ""),
+                "base64"
+            ))
+        }
 
         fs.writeFileSync(gifPath, gifBuffer);
 
@@ -196,24 +215,29 @@ async function overlayAvatarOnGif(inputAvatar, delay, selectedSource,rotate) {
         const avatarCache = new Map();
 
 
-        const sizes = extractAllSizes(positions);
-        for (const size of sizes) {
-            if (!avatarCache.has(size)) {
-                const avatarPath = path.join(tmpDir, `avatar_${size}.png`);
-                await createCircularAvatar(avatarBuffer, size, avatarPath);
-                avatarCache.set(size, avatarPath);
+        // 判断是否多个头像
+        if (inputAvatarList instanceof Array){
+            const sizes = extractAllSizes(positions);
+            for (const {x, y, size} of sizes) {
+                for (let i = 0; i < avatarBufferList.length; i++) {
+                    if (!avatarCache.has("" + x + y + size + i)) {
+                        const avatarPath = path.join(tmpDir, `avatar_${size + i}.png`);
+                        await createCircularAvatar(avatarBufferList[i], size, avatarPath);
+                        avatarCache.set("" + x + y + size + i, avatarPath);
+                    }
+                }
+            }
+        }else{
+            for (const [_, __, size] of positions) {
+                if (!avatarCache.has(size)) {
+                    const avatarPath = path.join(tmpDir, `avatar_${size}.png`);
+                    await createCircularAvatar(avatarBufferList[0], size, avatarPath);
+                    avatarCache.set(size, avatarPath);
+                }
             }
         }
 
 
-
-        // for (const [_, __, size] of positions) {
-        //     if (!avatarCache.has(size)) {
-        //         const avatarPath = path.join(tmpDir, `avatar_${size}.png`);
-        //         await createCircularAvatar(avatarBuffer, size, avatarPath);
-        //         avatarCache.set(size, avatarPath);
-        //     }
-        // }
 
         // 限制并发数为4，处理每一帧的头像叠加
         const limit = pLimit(4);
@@ -230,8 +254,8 @@ async function overlayAvatarOnGif(inputAvatar, delay, selectedSource,rotate) {
                         `overlay_${String(i + 1).padStart(3, "0")}.png`
                     );
                     // 把所有头像放到一个 composite 数组中
-                    const composites = item.map(([x, y, size]) => ({
-                        input: avatarCache.get(size),
+                    const composites = item.map(([x, y, size],index) => ({
+                        input: avatarCache.get("" + x + y + size + index),
                         left: x,
                         top: y
                     }));
