@@ -1,2 +1,2 @@
-const gif11Positions = [[48,7,94],[44,5,94],[40,6,94],[43,3,94]]
+const gif11Positions = [ [ 103, 25, 150 ], [ 101, 27, 146 ], [ 107, 27, 144 ], [ 43, 3, 94 ] ]
 module.exports = { gif11Positions };

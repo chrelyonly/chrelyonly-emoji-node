@@ -107,7 +107,11 @@
                                 <img :src="img.data" />
 
 <!--                                多图-->
-                                <div v-if="avatarPositions && avatarPositions[idx] instanceof Array">
+                                <div v-if="
+                                avatarPositions &&
+                                avatarPositions[idx] &&
+                                avatarPositions[idx].length > 1 &&
+                                avatarPositions[idx][0] instanceof Array">
                                     <div v-for="(avatarPositionInfo,index2) in avatarPositions[idx]" :key="index2">
                                         <!-- 拖拽圆圈 -->
                                         <div class="drag-circle"
