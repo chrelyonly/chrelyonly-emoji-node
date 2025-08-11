@@ -8,8 +8,10 @@ const { overlayAvatarOnGif, textOnGif } = require('../../util/gifUtil');
  */
 const uploadEmojiApi = async (req, res) => {
     try {
-        const { base64, delay, selectedSource, rotate } = req.body;
-
+        let { base64, delay, selectedSource, rotate } = req.body;
+        // 保证下这两个值为int
+        rotate = +rotate;
+        delay = +delay;
         // 参数校验
         if (!base64 || !delay || !selectedSource || !rotate) {
             return res.json(R.fail("操作异常"));
