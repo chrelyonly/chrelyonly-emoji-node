@@ -105,35 +105,72 @@
                         <el-card :body-style="{ padding: '10px' }">
                             <div style="position:relative;">
                                 <img :src="img.data" />
-                                <!-- 拖拽圆圈 -->
-                                <div class="drag-circle"
-                                     :style="{
+
+<!--                                多图-->
+                                <div v-if="avatarPositions && avatarPositions[idx] instanceof Array">
+                                    <div v-for="(avatarPositionInfo,index2) in avatarPositions[idx]" :key="index2">
+                                        <!-- 拖拽圆圈 -->
+                                        <div class="drag-circle"
+                                             :style="{
+                                    left: avatarPositionInfo[0] + 'px',
+                                    top: avatarPositionInfo[1] + 'px',
+                                    width: avatarPositionInfo[2] + 'px',
+                                    height: avatarPositionInfo[2] + 'px'
+                                }"
+                                             @mousedown="startDrag2($event,idx, index2)"
+                                        ></div>
+
+                                        <!-- 控制按钮,可能存在多张图 -->
+                                        <div style="margin-top: 10px; text-align: center;">
+                                            <div v-if="avatarPositionInfo">
+                                                <el-tag>X: {{avatarPositionInfo[0]}}</el-tag>
+                                                <el-tag>Y: {{avatarPositionInfo[1]}}</el-tag>
+                                                <el-tag>头像尺寸: {{avatarPositionInfo[2]}}</el-tag>
+                                                <div>
+                                                    <el-input-number v-model="avatarPositionInfo[0]" />
+                                                </div>
+                                                <div>
+                                                    <el-input-number v-model="avatarPositionInfo[1]" />
+                                                </div>
+                                                <div>
+                                                    <el-input-number v-model="avatarPositionInfo[2]" />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+<!--                                单图-->
+                                <div v-else>
+                                    <!-- 拖拽圆圈 -->
+                                    <div class="drag-circle"
+                                         :style="{
                                         left: avatarPositions[idx][0] + 'px',
                                         top: avatarPositions[idx][1] + 'px',
                                         width: avatarPositions[idx][2] + 'px',
                                         height: avatarPositions[idx][2] + 'px'
                                     }"
-                                     @mousedown="startDrag($event, idx)"
-                                ></div>
+                                         @mousedown="startDrag($event, idx)"
+                                    ></div>
 
-                                <!-- 控制按钮 -->
-                                <div style="margin-top: 10px; text-align: center;">
-                                    <el-button size="small" @click="moveLeft(idx)">左</el-button>
-                                    <el-button size="small" @click="moveUp(idx)">上</el-button>
-                                    <el-button size="small" @click="moveDown(idx)">下</el-button>
-                                    <el-button size="small" @click="moveRight(idx)">右</el-button>
-                                    <div v-if="avatarPositions[idx]">
-                                        <el-tag>X: {{avatarPositions[idx][0]}}</el-tag>
-                                        <el-tag>Y: {{avatarPositions[idx][1]}}</el-tag>
-                                        <el-tag>头像尺寸: {{avatarPositions[idx][2]}}</el-tag>
-                                        <div>
-                                            <el-input-number v-model="avatarPositions[idx][0]" />
-                                        </div>
-                                        <div>
-                                            <el-input-number v-model="avatarPositions[idx][1]" />
-                                        </div>
-                                        <div>
-                                            <el-input-number v-model="avatarPositions[idx][2]" />
+                                    <!-- 控制按钮 -->
+                                    <div style="margin-top: 10px; text-align: center;">
+                                        <el-button size="small" @click="moveLeft(idx)">左</el-button>
+                                        <el-button size="small" @click="moveUp(idx)">上</el-button>
+                                        <el-button size="small" @click="moveDown(idx)">下</el-button>
+                                        <el-button size="small" @click="moveRight(idx)">右</el-button>
+                                        <div v-if="avatarPositions[idx]">
+                                            <el-tag>X: {{avatarPositions[idx][0]}}</el-tag>
+                                            <el-tag>Y: {{avatarPositions[idx][1]}}</el-tag>
+                                            <el-tag>头像尺寸: {{avatarPositions[idx][2]}}</el-tag>
+                                            <div>
+                                                <el-input-number v-model="avatarPositions[idx][0]" />
+                                            </div>
+                                            <div>
+                                                <el-input-number v-model="avatarPositions[idx][1]" />
+                                            </div>
+                                            <div>
+                                                <el-input-number v-model="avatarPositions[idx][2]" />
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -161,7 +198,7 @@
             const loadingBtn = ref(false);
             const selectedSource = ref("");
             const avatarWidth = ref(100);
-
+            const dragSubIndex = ref(null);
             // 拖拽状态
             const dragging = ref(false);
             const dragIndex = ref(null);
@@ -171,21 +208,39 @@
             const startDrag = (e, idx) => {
                 dragging.value = true;
                 dragIndex.value = idx;
+                dragSubIndex.value = null; // 单图
                 offsetX.value = e.clientX - avatarPositions.value[idx][0];
                 offsetY.value = e.clientY - avatarPositions.value[idx][1];
                 e.preventDefault();
             };
 
+            const startDrag2 = (e, idx, index2) => {
+                dragging.value = true;
+                dragIndex.value = idx;
+                dragSubIndex.value = index2; // 记录多图的子索引
+                offsetX.value = e.clientX - avatarPositions.value[idx][index2][0];
+                offsetY.value = e.clientY - avatarPositions.value[idx][index2][1];
+                e.preventDefault();
+            };
+
             const onMouseMove = (e) => {
                 if (dragging.value && dragIndex.value !== null) {
-                    avatarPositions.value[dragIndex.value][0] = e.clientX - offsetX.value;
-                    avatarPositions.value[dragIndex.value][1] = e.clientY - offsetY.value;
+                    if (dragSubIndex.value === null) {
+                        // 单图模式
+                        avatarPositions.value[dragIndex.value][0] = e.clientX - offsetX.value;
+                        avatarPositions.value[dragIndex.value][1] = e.clientY - offsetY.value;
+                    } else {
+                        // 多图模式
+                        avatarPositions.value[dragIndex.value][dragSubIndex.value][0] = e.clientX - offsetX.value;
+                        avatarPositions.value[dragIndex.value][dragSubIndex.value][1] = e.clientY - offsetY.value;
+                    }
                 }
             };
 
             const onMouseUp = () => {
                 dragging.value = false;
                 dragIndex.value = null;
+                dragSubIndex.value = null;
             };
 
             onMounted(() => {
@@ -245,7 +300,8 @@
                 moveRight,
                 moveUp,
                 moveDown,
-                startDrag
+                startDrag,
+                startDrag2
             };
         }
     });
