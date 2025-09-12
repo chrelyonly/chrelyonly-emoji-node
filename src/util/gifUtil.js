@@ -226,11 +226,11 @@ async function overlayAvatarOnGif(inputAvatarList, delay, selectedSource,rotate)
             const sizes = extractAllSizes(positions);
             for (const {x, y, size} of sizes) {
                 for (let i = 0; i < avatarBufferList.length; i++) {
-                    // if (!avatarCache.has("" + x + y + size + i)) {
+                    if (!avatarCache.has("" + x + y + size + i)) {
                         const avatarPath = path.join(tmpDir, `avatar_${"" + x + y + size + i}.png`);
                         await createCircularAvatar(avatarBufferList[i], size, avatarPath);
                         avatarCache.set("" + x + y + size + i, avatarPath);
-                    // }
+                    }
                 }
             }
         }else{
