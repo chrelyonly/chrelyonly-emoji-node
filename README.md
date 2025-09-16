@@ -1,3 +1,12 @@
+
+##
+- 
+<p align="center">
+  <a href="https://nginx-3.frp.chrelyonly.cn" target="_blank">
+    <img alt="chrelyonly!" src="https://nginx-3.frp.chrelyonly.cn/moe-counter-api/@chrelyonly-emoji-node?name=chrelyonly&theme=rule34">
+  </a>
+</p>
+
 重新用node写了一遍,java的gif编码器有点问题,但是node的gif编码器也不好用(已解决)
 ## 建议
 ### 浏览器的gif播放有帧限制,过低会导致gif动画异常(即使保存出来也异常),用请求工具直接访问接口拿gif可以无视浏览器帧限制
