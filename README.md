@@ -7,6 +7,20 @@
   </a>
 </p>
 
+
+
+## 异常
+```
+import gifFrames from 'gif-frames';
+```
+### node自带gif播放器异常
+使用gifFrames读取的图片会丢失颜色
+![baseCanvas.png](doc/baseCanvas.png)
+![baseCanvas1.png](doc/baseCanvas1.png)
+
+
+
+
 重新用node写了一遍,java的gif编码器有点问题,但是node的gif编码器也不好用(已解决)
 ## 建议
 ### 浏览器的gif播放有帧限制,过低会导致gif动画异常(即使保存出来也异常),用请求工具直接访问接口拿gif可以无视浏览器帧限制
