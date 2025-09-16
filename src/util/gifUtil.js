@@ -39,6 +39,7 @@ const {gif11Positions} = require("../positions/gif11");
 const {gif12Positions} = require("../positions/gif12");
 const {gif13Positions} = require("../positions/gif13");
 const {gif14Positions} = require("../positions/gif14");
+const {gif15Positions} = require("../positions/gif15");
 
 /**
  * 创建圆形头像并保存为 PNG 格式
@@ -199,6 +200,8 @@ async function overlayAvatarOnGif(inputAvatarList, delay, selectedSource,rotate)
             positions = gif13Positions;
         } else if (selectedSource === "14.gif") {
             positions = gif14Positions;
+        } else if (selectedSource === "15.gif") {
+            positions = gif15Positions;
         } else {
             return Buffer.alloc(0); // 不支持的 GIF
         }

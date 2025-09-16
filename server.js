@@ -33,6 +33,7 @@ const {gif11Positions} = require("./src/positions/gif11");
 const {gif12Positions} = require("./src/positions/gif12");
 const {gif13Positions} = require("./src/positions/gif13");
 const {gif14Positions} = require("./src/positions/gif14");
+const {gif15Positions} = require("./src/positions/gif15");
 
 // 配置 JSON 请求体解析，最大上传大小限制为 10MB（适用于 base64 图片）
 app.use(express.json({ limit: '20mb' }));
@@ -103,6 +104,8 @@ app.post('/emoji-app/emoji/images', async (req, res) => {
             positions = gif13Positions;
         } else if (selectedSource === "gif14") {
             positions = gif14Positions;
+        } else if (selectedSource === "gif15") {
+            positions = gif15Positions;
         } else {
             return Buffer.alloc(0); // 不支持的 GIF
         }
