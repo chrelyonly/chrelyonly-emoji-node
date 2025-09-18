@@ -4,7 +4,6 @@
   "description": "",
   "main": "server.js",
   "bin": "server.js",
-  "type": "module",
   "scripts": {
     "start": "node server.js",
     "q": "pnpm uninstall p-limit && pnpm install p-limit@3"

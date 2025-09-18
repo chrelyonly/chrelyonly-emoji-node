@@ -206,19 +206,78 @@ async function overlayAvatarOnGif(inputAvatarList, delay, selectedSource,rotate)
             return Buffer.alloc(0); // 不支持的 GIF
         }
 
-        // 使用 ffmpeg 提取 GIF 每一帧为 PNG
-        const framePattern = path.join(tmpDir, "frame_%03d.png");
-        await new Promise((resolve, reject) => {
-            ffmpeg(gifPath)
-                .outputOptions([
-                    '-vsync 0',   // 关闭帧率同步，保持帧数不变
-                    '-ignore_loop 0' // 保持GIF动画循环设置
-                ])
-                .output(framePattern)
-                .on("end", resolve)
-                .on("error", reject)
-                .run();
-        });
+        let gifDir;
+        switch (selectedSource) {
+            case "2.gif":
+                gifDir = "gif2";
+                break;
+            case "3.gif":
+                gifDir = "gif3";
+                break;
+            case "4.gif":
+                gifDir = "gif4";
+                break;
+            case "5.gif":
+                gifDir = "gif5";
+                break;
+            case "6.gif":
+                gifDir = "gif6";
+                break;
+            case "7.gif":
+                gifDir = "gif7";
+                break;
+            case "10.gif":
+                gifDir = "gif10";
+                break;
+            case "11.gif":
+                gifDir = "gif11";
+                break;
+            case "12.gif":
+                gifDir = "gif12";
+                break;
+            case "13.gif":
+                gifDir = "gif13";
+                break;
+            case "14.gif":
+                gifDir = "gif14";
+                break;
+            case "15.gif":
+                gifDir = "gif15";
+                break;
+            default:
+                throw new Error(`Unsupported GIF: ${selectedSource}`);
+        }
+// 假设 public/frames/ 下有 frame_001.png, frame_002.png ...
+        const frameFiles = await fs.promises.readdir("public/frames/" + gifDir);
+
+// 过滤只取 png 文件并排序
+        const pngFiles = frameFiles
+            .filter(f => f.toLowerCase().endsWith('.png'))
+            .sort((a, b) => {
+                // 按数字排序 frame_0.png, frame_1.png ...
+                const numA = parseInt(a.match(/\d+/)[0]);
+                const numB = parseInt(b.match(/\d+/)[0]);
+                return numA - numB;
+            });
+
+        await Promise.all(pngFiles.map(async (file, index) => {
+            const src = path.join(`public/frames/${gifDir}`, file);
+            // 重命名为 frame_001.png, frame_002.png ...
+            const dest = path.join(tmpDir, `frame_${String(index + 1).padStart(3, '0')}.png`);
+            await fs.promises.copyFile(src, dest);
+        }));
+        // const framePattern = path.join(tmpDir, "frame_%03d.png");
+        // await new Promise((resolve, reject) => {
+        //     ffmpeg(gifPath)
+        //         .outputOptions([
+        //             '-vsync 0',   // 关闭帧率同步，保持帧数不变
+        //             '-ignore_loop 0' // 保持GIF动画循环设置
+        //         ])
+        //         .output(framePattern)
+        //         .on("end", resolve)
+        //         .on("error", reject)
+        //         .run();
+        // });
 
         // 为不同尺寸缓存裁剪好的圆形头像
         const avatarCache = new Map();
@@ -249,7 +308,8 @@ async function overlayAvatarOnGif(inputAvatarList, delay, selectedSource,rotate)
 
 
         // 限制并发数为4，处理每一帧的头像叠加
-        const limit = pLimit(4);
+        const limit = pLimit(Math.max(os.cpus().length, 4));
+
         const frameOverlayPromises = positions.map((item, i) =>
             limit(async () => {
                 // 判断多图
@@ -429,7 +489,7 @@ const textOnGif = async  (textList, delay, selectedSource,rotate,gifPositions,fo
 
         }
         // 限制并发数为4，处理每一帧的头像叠加
-        const limit = pLimit(4);
+        const limit = pLimit(Math.max(os.cpus().length, 4));
         // 循环合成png到gif
 
         const frameOverlayPromises = []
