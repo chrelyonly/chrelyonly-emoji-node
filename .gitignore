@@ -23,3 +23,6 @@ pnpm-debug.log*
 *.sw?
 temp/gif*
 #src/lib/win/ffmpeg.exe
+
+
+output

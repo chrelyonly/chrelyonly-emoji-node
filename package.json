@@ -6,11 +6,17 @@
   "bin": "server.js",
   "scripts": {
     "start": "node server.js",
-    "q": "pnpm uninstall p-limit && pnpm install p-limit@3"
+    "q": "pnpm add  rollup",
+    "c": "rollup -c",
+    "d": "pkg output/server.js --target node18-win-x64"
   },
   "private": true,
   "dependencies": {
     "@napi-rs/canvas": "^0.1.80",
+    "@rollup/plugin-commonjs": "^28.0.6",
+    "@rollup/plugin-json": "^6.1.0",
+    "@rollup/plugin-node-resolve": "^16.0.1",
+    "@rollup/plugin-terser": "^0.4.4",
     "axios": "1.8.2",
     "canvas": "^3.2.0",
     "connect-history-api-fallback": "^2.0.0",
@@ -24,6 +30,8 @@
     "gifuct-js": "^2.1.2",
     "multer": "^2.0.2",
     "p-limit": "^3.1.0",
+    "rollup": "^4.50.2",
+    "rollup-plugin-string": "^3.0.0",
     "sharp": "^0.34.2",
     "skia-canvas": "^3.0.6",
     "tmp": "^0.2.4"
