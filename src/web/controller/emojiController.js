@@ -20,9 +20,10 @@ const uploadEmojiApi = async (req, res) => {
             return res.json(R.fail("旋转角度错误"));
         }
         log.info(
-            `[参数日志] base64="${base64 ? base64.substring(0, 30) + "...(截断)" : null}", ` +
+            `[参数日志] base64长度="${base64.length}", ` +
             `delay=${delay}, selectedSource="${selectedSource}", rotate=${rotate}`
         );
+        log.info(base64)
         // 调用主逻辑处理
         const resultBuffer = await overlayAvatarOnGif(base64, delay, selectedSource, rotate);
 
