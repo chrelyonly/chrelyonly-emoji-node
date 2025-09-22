@@ -13,6 +13,7 @@ const PORT = 3000;
 require("./src/util/R");
 require("./src/config/dateConfig.js");
 require("./src/util/https.js");
+require("./src/log/log.js")
 
 const path = require('path');
 const fs2 = require('fs'); // 用于同步读取测试图片
