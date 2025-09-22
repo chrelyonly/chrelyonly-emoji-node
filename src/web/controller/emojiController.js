@@ -23,12 +23,12 @@ const uploadEmojiApi = async (req, res) => {
             `[参数日志] base64长度="${base64.length}", ` +
             `delay=${delay}, selectedSource="${selectedSource}", rotate=${rotate}`
         );
-        log.info(base64)
+        // log.info(base64)
         // 调用主逻辑处理
         const resultBuffer = await overlayAvatarOnGif(base64, delay, selectedSource, rotate);
 
         if (!resultBuffer || resultBuffer.length < 1) {
-            return res.json(R.fail("不支持的类型"));
+            return res.json(R.fail("传入的图片数量不对或不支持的类型或参数不对"));
         }
 
         // 转换为 base64 字符串响应
