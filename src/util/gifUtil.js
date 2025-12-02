@@ -253,6 +253,9 @@ async function overlayAvatarOnGif(inputAvatarList, delay, selectedSource,rotate)
             case "16.gif":
                 gifDir = "gif16";
                 break;
+            case "17.gif":
+                gifDir = "gif17";
+                break;
             default:
                 throw new Error(`Unsupported GIF: ${selectedSource}`);
         }
