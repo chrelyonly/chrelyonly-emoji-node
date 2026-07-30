@@ -302,7 +302,7 @@ async function overlayAvatarOnGif(inputAvatarList, delay, selectedSource,rotate)
 
 
         // 判断是否多个头像
-        if (inputAvatarList instanceof Array){
+        if (avatarBufferList.length > 1){
             const sizes = extractAllSizes(positions);
             for (const {x, y, size} of sizes) {
                 for (let i = 0; i < avatarBufferList.length; i++) {
